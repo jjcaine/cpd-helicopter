@@ -1,0 +1,23 @@
+{
+  "name": "cpd-helicopter",
+  "version": "1.0.0",
+  "description": "Fetch historic flight data from ADS-B Exchange",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "fetch": "node index.js"
+  },
+  "keywords": [
+    "adsb",
+    "aircraft",
+    "flight-tracking",
+    "aviation"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "axios": "^1.13.2",
+    "playwright": "^1.57.0"
+  }
+}
