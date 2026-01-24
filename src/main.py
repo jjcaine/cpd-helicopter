@@ -1,0 +1,274 @@
+"""Main entry point for CPD Helicopter Flight Tracker."""
+
+import argparse
+import asyncio
+import csv
+import re
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+from config import TRACKED_AIRCRAFT
+from src.scraper import (
+    fetch_trace_data,
+    parse_flight_legs,
+    filter_legs_by_date_range,
+    get_date_range,
+    get_yesterday,
+)
+from src.database import SessionLocal, upsert_flights
+
+
+def parse_args():
+    """Parse command-line arguments."""
+    parser = argparse.ArgumentParser(
+        description='CPD Helicopter Flight Tracker - Fetch and store flight data'
+    )
+
+    parser.add_argument(
+        '--icao',
+        type=str,
+        help='Aircraft ICAO hex code (e.g., ad389e). If not specified, uses all tracked aircraft.'
+    )
+    parser.add_argument(
+        '--start-date',
+        type=str,
+        help='Start date in YYYY-MM-DD format'
+    )
+    parser.add_argument(
+        '--end-date',
+        type=str,
+        help='End date in YYYY-MM-DD format (defaults to start-date if not specified)'
+    )
+    parser.add_argument(
+        '--yesterday',
+        action='store_true',
+        help='Fetch flights for yesterday (UTC)'
+    )
+    parser.add_argument(
+        '--backfill',
+        type=str,
+        metavar='CSV_FILE',
+        help='Backfill flights from a CSV file'
+    )
+
+    return parser.parse_args()
+
+
+def extract_icao_from_filename(filename: str) -> str | None:
+    """
+    Extract ICAO code from filename if present.
+
+    Examples:
+        'ad389e_flights.csv' -> 'ad389e'
+        'flights.csv' -> None
+    """
+    match = re.match(r'^([a-f0-9]{6})_', filename.lower())
+    return match.group(1) if match else None
+
+
+def parse_csv_file(filepath: str, icao: str) -> list[dict]:
+    """
+    Parse a CSV file and return flight records.
+
+    Expected CSV format:
+        Date,Start Time (UTC),End Time (UTC)
+        2025-12-16,18:43:54,20:05:07
+
+    Args:
+        filepath: Path to the CSV file
+        icao: Aircraft ICAO code
+
+    Returns:
+        list: List of flight dicts with 'icao', 'start_time', 'end_time'
+    """
+    flights = []
+
+    with open(filepath, 'r') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            date_str = row['Date']
+            start_time_str = row['Start Time (UTC)']
+            end_time_str = row['End Time (UTC)']
+
+            # Parse start time
+            start_time = datetime.strptime(
+                f"{date_str} {start_time_str}",
+                '%Y-%m-%d %H:%M:%S'
+            ).replace(tzinfo=timezone.utc)
+
+            # Parse end time - handle midnight rollover
+            end_time = datetime.strptime(
+                f"{date_str} {end_time_str}",
+                '%Y-%m-%d %H:%M:%S'
+            ).replace(tzinfo=timezone.utc)
+
+            # If end time is before start time, it rolled over to the next day
+            if end_time < start_time:
+                end_time = end_time.replace(day=end_time.day + 1)
+
+            flights.append({
+                'icao': icao,
+                'start_time': start_time,
+                'end_time': end_time
+            })
+
+    return flights
+
+
+def backfill_from_csv(filepath: str, icao: str | None = None):
+    """
+    Backfill flights from a CSV file into the database.
+
+    Args:
+        filepath: Path to the CSV file
+        icao: Aircraft ICAO code (optional, will try to extract from filename)
+    """
+    path = Path(filepath)
+
+    if not path.exists():
+        print(f"Error: File not found: {filepath}", file=sys.stderr)
+        sys.exit(1)
+
+    # Try to extract ICAO from filename if not provided
+    if not icao:
+        icao = extract_icao_from_filename(path.name)
+        if not icao:
+            print("Error: Could not determine ICAO code. Please provide --icao argument.", file=sys.stderr)
+            sys.exit(1)
+        print(f"Detected ICAO from filename: {icao}")
+
+    print(f"Backfilling from {filepath} for aircraft {icao}...")
+
+    flights = parse_csv_file(filepath, icao)
+    print(f"Parsed {len(flights)} flights from CSV")
+
+    if not flights:
+        print("No flights to import")
+        return
+
+    session = SessionLocal()
+    try:
+        results = upsert_flights(session, flights)
+        print(f"Results: {results['inserted']} inserted, {results['updated']} updated, {results['unchanged']} unchanged")
+    finally:
+        session.close()
+
+
+async def fetch_flights_for_aircraft(icao: str, dates: list[str]) -> list[dict]:
+    """
+    Fetch all flights for an aircraft across multiple dates.
+
+    Args:
+        icao: Aircraft ICAO code
+        dates: List of dates in YYYY-MM-DD format
+
+    Returns:
+        list: List of flight dicts with 'icao', 'start_time', 'end_time'
+    """
+    all_flights = []
+    seen_start_times = set()
+
+    for date in dates:
+        print(f"  Fetching {icao} for {date}...", file=sys.stderr)
+
+        try:
+            trace_data = await fetch_trace_data(icao, date)
+            legs = parse_flight_legs(trace_data)
+            filtered_legs = filter_legs_by_date_range(legs, date, date)
+
+            if not filtered_legs:
+                print(f"    No flights found for {icao} on {date}", file=sys.stderr)
+                continue
+
+            print(f"    Found {len(filtered_legs)} flight(s)", file=sys.stderr)
+
+            for leg in filtered_legs:
+                # Deduplicate by start time
+                start_key = leg['start_time'].isoformat()
+                if start_key not in seen_start_times:
+                    seen_start_times.add(start_key)
+                    all_flights.append({
+                        'icao': icao,
+                        'start_time': leg['start_time'],
+                        'end_time': leg['end_time']
+                    })
+
+        except ValueError as e:
+            print(f"    Error fetching {icao} on {date}: {e}", file=sys.stderr)
+        except Exception as e:
+            print(f"    Unexpected error fetching {icao} on {date}: {e}", file=sys.stderr)
+
+    return all_flights
+
+
+async def sync_flights(aircraft: list[str], start_date: str, end_date: str | None = None):
+    """
+    Sync flights for aircraft over a date range.
+
+    Args:
+        aircraft: List of ICAO codes
+        start_date: Start date in YYYY-MM-DD format
+        end_date: End date in YYYY-MM-DD format (optional)
+    """
+    dates = get_date_range(start_date, end_date)
+    print(f"Fetching data for {len(dates)} date(s): {start_date} to {end_date or start_date}", file=sys.stderr)
+
+    all_flights = []
+
+    for icao in aircraft:
+        print(f"\nProcessing aircraft {icao}...", file=sys.stderr)
+        flights = await fetch_flights_for_aircraft(icao, dates)
+        all_flights.extend(flights)
+
+    if not all_flights:
+        print("\nNo flights found in the specified date range", file=sys.stderr)
+        return
+
+    # Sort by start time
+    all_flights.sort(key=lambda f: f['start_time'])
+
+    print(f"\nTotal: {len(all_flights)} flight(s) to sync", file=sys.stderr)
+
+    # Upsert to database
+    session = SessionLocal()
+    try:
+        results = upsert_flights(session, all_flights)
+        print(f"Results: {results['inserted']} inserted, {results['updated']} updated, {results['unchanged']} unchanged", file=sys.stderr)
+    finally:
+        session.close()
+
+
+def main():
+    """Main entry point."""
+    args = parse_args()
+
+    # Backfill mode
+    if args.backfill:
+        backfill_from_csv(args.backfill, args.icao)
+        return
+
+    # Determine date range
+    if args.yesterday:
+        start_date = get_yesterday()
+        end_date = None
+    elif args.start_date:
+        start_date = args.start_date
+        end_date = args.end_date
+    else:
+        print("Error: Must specify --yesterday or --start-date", file=sys.stderr)
+        sys.exit(1)
+
+    # Determine aircraft list
+    if args.icao:
+        aircraft = [args.icao]
+    else:
+        aircraft = TRACKED_AIRCRAFT
+        print(f"Using tracked aircraft: {', '.join(aircraft)}", file=sys.stderr)
+
+    # Run async sync
+    asyncio.run(sync_flights(aircraft, start_date, end_date))
+
+
+if __name__ == '__main__':
+    main()

@@ -1,8 +1,28 @@
 # Dependencies
 node_modules/
+venv/
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+
+# Environment
+.env
 
 # OS files
 .DS_Store
 
 # Log files
 *.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
