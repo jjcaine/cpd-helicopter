@@ -7,7 +7,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.sql import func
 
 from config import get_database_url
-from src.models import Base, Flight
+from src.models import Base, Flight, FlightTelemetry
 
 engine = create_engine(get_database_url())
 SessionLocal = sessionmaker(bind=engine)
@@ -113,3 +113,99 @@ def upsert_flights(session, flights: list[dict]) -> dict:
         results[result['action']] += 1
 
     return results
+
+
+def delete_flight_telemetry(session, flight_id: int) -> int:
+    """
+    Delete all telemetry points for a flight.
+
+    Args:
+        session: SQLAlchemy session
+        flight_id: Flight ID to delete telemetry for
+
+    Returns:
+        int: Number of telemetry points deleted
+    """
+    deleted = session.query(FlightTelemetry).filter_by(flight_id=flight_id).delete()
+    session.commit()
+    return deleted
+
+
+def insert_telemetry(session, flight_id: int, telemetry_points: list[dict]) -> int:
+    """
+    Bulk insert telemetry points for a flight.
+
+    Deletes any existing telemetry for the flight before inserting.
+
+    Args:
+        session: SQLAlchemy session
+        flight_id: Flight ID to associate telemetry with
+        telemetry_points: List of telemetry point dicts
+
+    Returns:
+        int: Number of telemetry points inserted
+    """
+    if not telemetry_points:
+        return 0
+
+    # Delete existing telemetry for this flight (for re-runs)
+    delete_flight_telemetry(session, flight_id)
+
+    # Prepare records for bulk insert
+    records = []
+    for point in telemetry_points:
+        records.append({
+            'flight_id': flight_id,
+            'timestamp': point['timestamp'],
+            'latitude': point['latitude'],
+            'longitude': point['longitude'],
+            'altitude': point.get('altitude'),
+            'altitude_ground': point.get('altitude_ground', False),
+            'ground_speed': point.get('ground_speed'),
+            'track': point.get('track'),
+            'vertical_rate': point.get('vertical_rate'),
+            'flags': point.get('flags'),
+            'geo_altitude': point.get('geo_altitude'),
+            'geo_vertical_rate': point.get('geo_vertical_rate'),
+            'ias': point.get('ias'),
+            'roll_angle': point.get('roll_angle'),
+        })
+
+    # Bulk insert
+    session.bulk_insert_mappings(FlightTelemetry, records)
+    session.commit()
+
+    return len(records)
+
+
+def upsert_flight_with_telemetry(
+    session,
+    icao: str,
+    start_time: datetime,
+    end_time: datetime,
+    telemetry: list[dict] | None = None
+) -> dict:
+    """
+    Insert or update a flight record with optional telemetry.
+
+    Args:
+        session: SQLAlchemy session
+        icao: Aircraft ICAO hex code
+        start_time: Flight start time (timezone-aware)
+        end_time: Flight end time (timezone-aware)
+        telemetry: Optional list of telemetry point dicts
+
+    Returns:
+        dict: {'action': str, 'flight': Flight, 'telemetry_count': int}
+    """
+    result = upsert_flight(session, icao, start_time, end_time)
+
+    telemetry_count = 0
+    if telemetry and result['flight']:
+        telemetry_count = insert_telemetry(session, result['flight'].id, telemetry)
+
+    return {
+        'action': result['action'],
+        'flight': result['flight'],
+        'telemetry_count': telemetry_count
+    }

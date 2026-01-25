@@ -5,6 +5,7 @@ from datetime import datetime, timezone, timedelta
 
 from src.scraper import (
     parse_flight_legs,
+    parse_telemetry_point,
     filter_legs_by_date_range,
     get_date_range,
     get_yesterday,
@@ -210,3 +211,145 @@ class TestGetYesterday:
         result = get_yesterday()
         expected = (datetime.now(timezone.utc) - timedelta(days=1)).strftime('%Y-%m-%d')
         assert result == expected
+
+
+class TestParseTelemetryPoint:
+    """Tests for parse_telemetry_point function."""
+
+    def test_parse_basic_point(self):
+        """Parse a basic telemetry point."""
+        base_timestamp = 1700000000
+        point = [60, 41.8, -87.6, 1500, 120.5, 90.0]
+
+        result = parse_telemetry_point(base_timestamp, point)
+
+        assert result['timestamp'] == datetime.fromtimestamp(1700000060, tz=timezone.utc)
+        assert result['latitude'] == 41.8
+        assert result['longitude'] == -87.6
+        assert result['altitude'] == 1500
+        assert result['altitude_ground'] is False
+        assert result['ground_speed'] == 120.5
+        assert result['track'] == 90.0
+
+    def test_parse_ground_altitude(self):
+        """Parse point with 'ground' altitude."""
+        base_timestamp = 1700000000
+        point = [0, 41.8, -87.6, "ground", 0.0, 0.0]
+
+        result = parse_telemetry_point(base_timestamp, point)
+
+        assert result['altitude'] is None
+        assert result['altitude_ground'] is True
+
+    def test_parse_full_point(self):
+        """Parse point with all fields."""
+        base_timestamp = 1700000000
+        # indices: 0=offset, 1=lat, 2=lon, 3=alt, 4=gs, 5=track, 6=flags,
+        #          7=vrate, 8=unused, 9=unused, 10=geoalt, 11=geovrate, 12=ias, 13=roll
+        point = [0, 41.8, -87.6, 2000, 150.0, 180.0, 1, 500, None, None, 2100, 480, 145, 5.5]
+
+        result = parse_telemetry_point(base_timestamp, point)
+
+        assert result['altitude'] == 2000
+        assert result['ground_speed'] == 150.0
+        assert result['track'] == 180.0
+        assert result['flags'] == 1
+        assert result['vertical_rate'] == 500
+        assert result['geo_altitude'] == 2100
+        assert result['geo_vertical_rate'] == 480
+        assert result['ias'] == 145
+        assert result['roll_angle'] == 5.5
+
+    def test_parse_missing_fields(self):
+        """Parse point with missing optional fields."""
+        base_timestamp = 1700000000
+        point = [0, 41.8, -87.6]  # Only required fields
+
+        result = parse_telemetry_point(base_timestamp, point)
+
+        assert result['latitude'] == 41.8
+        assert result['longitude'] == -87.6
+        assert result['altitude'] is None
+        assert result['ground_speed'] is None
+        assert result['track'] is None
+
+    def test_parse_null_values(self):
+        """Parse point with null values in array."""
+        base_timestamp = 1700000000
+        point = [0, 41.8, -87.6, None, None, 90.0]
+
+        result = parse_telemetry_point(base_timestamp, point)
+
+        assert result['altitude'] is None
+        assert result['ground_speed'] is None
+        assert result['track'] == 90.0
+
+
+class TestParseFlightLegsWithTelemetry:
+    """Tests for telemetry in parse_flight_legs."""
+
+    def test_legs_include_telemetry(self):
+        """Flight legs should include telemetry points."""
+        trace_data = {
+            'timestamp': 1700000000,
+            'trace': [
+                [0, 41.8, -87.6, 1000, 100.0, 90.0],
+                [60, 41.81, -87.61, 1500, 110.0, 92.0],
+                [120, 41.82, -87.62, 2000, 115.0, 95.0],
+            ]
+        }
+
+        legs = parse_flight_legs(trace_data)
+
+        assert len(legs) == 1
+        assert 'telemetry' in legs[0]
+        assert len(legs[0]['telemetry']) == 3
+        assert legs[0]['telemetry'][0]['latitude'] == 41.8
+        assert legs[0]['telemetry'][1]['altitude'] == 1500
+        assert legs[0]['telemetry'][2]['ground_speed'] == 115.0
+
+    def test_multiple_legs_separate_telemetry(self):
+        """Each leg should have its own telemetry."""
+        trace_data = {
+            'timestamp': 1700000000,
+            'trace': [
+                [0, 41.8, -87.6, 1000],
+                [60, 41.81, -87.61, 1500],
+                # 10 minute gap
+                [660, 42.0, -88.0, 2000],
+                [720, 42.01, -88.01, 2500],
+            ]
+        }
+
+        legs = parse_flight_legs(trace_data)
+
+        assert len(legs) == 2
+        assert len(legs[0]['telemetry']) == 2
+        assert len(legs[1]['telemetry']) == 2
+
+        # First leg telemetry
+        assert legs[0]['telemetry'][0]['latitude'] == 41.8
+        assert legs[0]['telemetry'][1]['altitude'] == 1500
+
+        # Second leg telemetry
+        assert legs[1]['telemetry'][0]['latitude'] == 42.0
+        assert legs[1]['telemetry'][1]['altitude'] == 2500
+
+    def test_empty_trace_no_telemetry(self):
+        """Empty trace should return empty list."""
+        trace_data = {'timestamp': 1700000000, 'trace': []}
+        legs = parse_flight_legs(trace_data)
+        assert legs == []
+
+    def test_single_point_telemetry(self):
+        """Single point should have one telemetry point."""
+        trace_data = {
+            'timestamp': 1700000000,
+            'trace': [[0, 41.8, -87.6, 1000]]
+        }
+
+        legs = parse_flight_legs(trace_data)
+
+        assert len(legs) == 1
+        assert len(legs[0]['telemetry']) == 1
+        assert legs[0]['telemetry'][0]['latitude'] == 41.8

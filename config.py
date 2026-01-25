@@ -18,7 +18,7 @@ DATABASE_CONFIG = {
     'host': os.getenv('DB_HOST', 'db-postgresql-nyc3-13586-do-user-12959197-0.j.db.ondigitalocean.com'),
     'port': os.getenv('DB_PORT', '25060'),
     'database': os.getenv('DB_NAME', 'defaultdb'),
-    'sslmode': 'require'
+    'sslmode': os.getenv('DB_SSLMODE', 'require')
 }
 
 
