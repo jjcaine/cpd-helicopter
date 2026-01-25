@@ -16,7 +16,7 @@ from src.scraper import (
     get_date_range,
     get_yesterday,
 )
-from src.database import SessionLocal, upsert_flights
+from src.database import SessionLocal, upsert_flights, upsert_flight_with_telemetry
 
 
 def parse_args():
@@ -50,6 +50,11 @@ def parse_args():
         type=str,
         metavar='CSV_FILE',
         help='Backfill flights from a CSV file'
+    )
+    parser.add_argument(
+        '--no-telemetry',
+        action='store_true',
+        help='Skip telemetry capture (only store flight start/end times)'
     )
 
     return parser.parse_args()
@@ -155,16 +160,17 @@ def backfill_from_csv(filepath: str, icao: str | None = None):
         session.close()
 
 
-async def fetch_flights_for_aircraft(icao: str, dates: list[str]) -> list[dict]:
+async def fetch_flights_for_aircraft(icao: str, dates: list[str], include_telemetry: bool = True) -> list[dict]:
     """
     Fetch all flights for an aircraft across multiple dates.
 
     Args:
         icao: Aircraft ICAO code
         dates: List of dates in YYYY-MM-DD format
+        include_telemetry: Whether to include telemetry data
 
     Returns:
-        list: List of flight dicts with 'icao', 'start_time', 'end_time'
+        list: List of flight dicts with 'icao', 'start_time', 'end_time', and optionally 'telemetry'
     """
     all_flights = []
     seen_start_times = set()
@@ -188,11 +194,14 @@ async def fetch_flights_for_aircraft(icao: str, dates: list[str]) -> list[dict]:
                 start_key = leg['start_time'].isoformat()
                 if start_key not in seen_start_times:
                     seen_start_times.add(start_key)
-                    all_flights.append({
+                    flight_data = {
                         'icao': icao,
                         'start_time': leg['start_time'],
                         'end_time': leg['end_time']
-                    })
+                    }
+                    if include_telemetry:
+                        flight_data['telemetry'] = leg.get('telemetry', [])
+                    all_flights.append(flight_data)
 
         except ValueError as e:
             print(f"    Error fetching {icao} on {date}: {e}", file=sys.stderr)
@@ -202,7 +211,12 @@ async def fetch_flights_for_aircraft(icao: str, dates: list[str]) -> list[dict]:
     return all_flights
 
 
-async def sync_flights(aircraft: list[str], start_date: str, end_date: str | None = None):
+async def sync_flights(
+    aircraft: list[str],
+    start_date: str,
+    end_date: str | None = None,
+    include_telemetry: bool = True
+):
     """
     Sync flights for aircraft over a date range.
 
@@ -210,15 +224,18 @@ async def sync_flights(aircraft: list[str], start_date: str, end_date: str | Non
         aircraft: List of ICAO codes
         start_date: Start date in YYYY-MM-DD format
         end_date: End date in YYYY-MM-DD format (optional)
+        include_telemetry: Whether to capture and store telemetry data
     """
     dates = get_date_range(start_date, end_date)
     print(f"Fetching data for {len(dates)} date(s): {start_date} to {end_date or start_date}", file=sys.stderr)
+    if not include_telemetry:
+        print("Telemetry capture disabled", file=sys.stderr)
 
     all_flights = []
 
     for icao in aircraft:
         print(f"\nProcessing aircraft {icao}...", file=sys.stderr)
-        flights = await fetch_flights_for_aircraft(icao, dates)
+        flights = await fetch_flights_for_aircraft(icao, dates, include_telemetry)
         all_flights.extend(flights)
 
     if not all_flights:
@@ -230,11 +247,27 @@ async def sync_flights(aircraft: list[str], start_date: str, end_date: str | Non
 
     print(f"\nTotal: {len(all_flights)} flight(s) to sync", file=sys.stderr)
 
-    # Upsert to database
+    # Upsert to database with telemetry
     session = SessionLocal()
     try:
-        results = upsert_flights(session, all_flights)
+        results = {'inserted': 0, 'updated': 0, 'unchanged': 0}
+        total_telemetry = 0
+
+        for flight_data in all_flights:
+            telemetry = flight_data.get('telemetry') if include_telemetry else None
+            result = upsert_flight_with_telemetry(
+                session,
+                icao=flight_data['icao'],
+                start_time=flight_data['start_time'],
+                end_time=flight_data['end_time'],
+                telemetry=telemetry
+            )
+            results[result['action']] += 1
+            total_telemetry += result['telemetry_count']
+
         print(f"Results: {results['inserted']} inserted, {results['updated']} updated, {results['unchanged']} unchanged", file=sys.stderr)
+        if include_telemetry:
+            print(f"Telemetry: {total_telemetry} points stored", file=sys.stderr)
     finally:
         session.close()
 
@@ -267,7 +300,8 @@ def main():
         print(f"Using tracked aircraft: {', '.join(aircraft)}", file=sys.stderr)
 
     # Run async sync
-    asyncio.run(sync_flights(aircraft, start_date, end_date))
+    include_telemetry = not args.no_telemetry
+    asyncio.run(sync_flights(aircraft, start_date, end_date, include_telemetry))
 
 
 if __name__ == '__main__':
