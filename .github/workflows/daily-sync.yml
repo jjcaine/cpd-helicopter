@@ -27,7 +27,7 @@ jobs:
           source .venv/bin/activate
           playwright install chromium
 
-      - name: Fetch yesterday's flights for all aircraft
+      - name: Fetch flights with automatic backfill
         env:
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
@@ -36,7 +36,7 @@ jobs:
           DB_NAME: ${{ secrets.DB_NAME }}
         run: |
           source .venv/bin/activate
-          python -m src.main --yesterday
+          python -m src.main --auto-backfill
 
       - name: Notify on success
         if: success()

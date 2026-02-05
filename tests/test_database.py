@@ -1,9 +1,10 @@
 """Tests for database module."""
 
 import pytest
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
+from unittest.mock import patch
 
-from src.database import SessionLocal, upsert_flight, upsert_flights
+from src.database import SessionLocal, upsert_flight, upsert_flights, get_last_ingested_date
 from src.models import Flight
 
 
@@ -149,3 +150,105 @@ class TestUpsertFlights:
         assert results_2['inserted'] == 1
         assert results_2['updated'] == 1
         assert results_2['unchanged'] == 1
+
+
+class TestGetLastIngestedDate:
+    """Tests for get_last_ingested_date function."""
+
+    def test_no_data_returns_none(self, db_session, cleanup_test_flights):
+        """When no flights exist for aircraft, should return None."""
+        result = get_last_ingested_date(db_session, 'test99')
+        assert result is None
+
+    def test_single_aircraft_with_data(self, db_session, cleanup_test_flights):
+        """Should return the latest date for a specific aircraft."""
+        # Insert flights on different dates
+        flights = [
+            {
+                'icao': 'test10',
+                'start_time': datetime(2025, 3, 15, 10, 0, 0, tzinfo=timezone.utc),
+                'end_time': datetime(2025, 3, 15, 12, 0, 0, tzinfo=timezone.utc)
+            },
+            {
+                'icao': 'test10',
+                'start_time': datetime(2025, 3, 20, 10, 0, 0, tzinfo=timezone.utc),
+                'end_time': datetime(2025, 3, 20, 12, 0, 0, tzinfo=timezone.utc)
+            },
+            {
+                'icao': 'test10',
+                'start_time': datetime(2025, 3, 18, 10, 0, 0, tzinfo=timezone.utc),
+                'end_time': datetime(2025, 3, 18, 12, 0, 0, tzinfo=timezone.utc)
+            },
+        ]
+        upsert_flights(db_session, flights)
+
+        result = get_last_ingested_date(db_session, 'test10')
+        assert result == date(2025, 3, 20)
+
+    def test_multiple_flights_same_date(self, db_session, cleanup_test_flights):
+        """Multiple flights on the same date should return that date."""
+        flights = [
+            {
+                'icao': 'test11',
+                'start_time': datetime(2025, 4, 10, 8, 0, 0, tzinfo=timezone.utc),
+                'end_time': datetime(2025, 4, 10, 10, 0, 0, tzinfo=timezone.utc)
+            },
+            {
+                'icao': 'test11',
+                'start_time': datetime(2025, 4, 10, 14, 0, 0, tzinfo=timezone.utc),
+                'end_time': datetime(2025, 4, 10, 16, 0, 0, tzinfo=timezone.utc)
+            },
+        ]
+        upsert_flights(db_session, flights)
+
+        result = get_last_ingested_date(db_session, 'test11')
+        assert result == date(2025, 4, 10)
+
+    @patch('config.TRACKED_AIRCRAFT', ['test12', 'test13'])
+    def test_no_icao_returns_earliest_last_date(self, db_session, cleanup_test_flights):
+        """When no icao specified, should return earliest last date across tracked aircraft."""
+        # test12 has data up to March 25
+        flights_12 = [
+            {
+                'icao': 'test12',
+                'start_time': datetime(2025, 3, 25, 10, 0, 0, tzinfo=timezone.utc),
+                'end_time': datetime(2025, 3, 25, 12, 0, 0, tzinfo=timezone.utc)
+            },
+        ]
+        # test13 has data up to March 20 (earlier)
+        flights_13 = [
+            {
+                'icao': 'test13',
+                'start_time': datetime(2025, 3, 20, 10, 0, 0, tzinfo=timezone.utc),
+                'end_time': datetime(2025, 3, 20, 12, 0, 0, tzinfo=timezone.utc)
+            },
+        ]
+        upsert_flights(db_session, flights_12)
+        upsert_flights(db_session, flights_13)
+
+        result = get_last_ingested_date(db_session)
+        # Should return March 20 (the earliest last date)
+        assert result == date(2025, 3, 20)
+
+    @patch('config.TRACKED_AIRCRAFT', ['test14', 'test15'])
+    def test_no_icao_with_one_aircraft_missing_data(self, db_session, cleanup_test_flights):
+        """When one tracked aircraft has no data, should only consider aircraft with data."""
+        # Only test14 has data
+        flights = [
+            {
+                'icao': 'test14',
+                'start_time': datetime(2025, 5, 10, 10, 0, 0, tzinfo=timezone.utc),
+                'end_time': datetime(2025, 5, 10, 12, 0, 0, tzinfo=timezone.utc)
+            },
+        ]
+        upsert_flights(db_session, flights)
+
+        result = get_last_ingested_date(db_session)
+        # Should return May 10 (the only aircraft with data)
+        assert result == date(2025, 5, 10)
+
+    @patch('config.TRACKED_AIRCRAFT', ['test16', 'test17'])
+    def test_no_icao_all_missing_data(self, db_session, cleanup_test_flights):
+        """When no tracked aircraft have data, should return None."""
+        result = get_last_ingested_date(db_session)
+        assert result is None

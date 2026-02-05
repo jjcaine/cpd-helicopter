@@ -1,6 +1,6 @@
 """Database connection and session management."""
 
-from datetime import datetime
+from datetime import date, datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.dialects.postgresql import insert
@@ -25,6 +25,42 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def get_last_ingested_date(session, icao: str = None) -> date | None:
+    """
+    Get the last date with ingested flight data.
+
+    Args:
+        session: SQLAlchemy session
+        icao: Optional aircraft ICAO. If None, returns earliest last date across all tracked aircraft.
+
+    Returns:
+        date: The most recent date with flight data, or None if no data exists
+    """
+    from config import TRACKED_AIRCRAFT
+
+    if icao:
+        # Get last date for specific aircraft
+        result = session.query(func.max(func.date(Flight.start_time))).filter(
+            Flight.icao == icao
+        ).scalar()
+        return result
+
+    # Get last date for each tracked aircraft, return the minimum (earliest)
+    # This ensures we backfill from the earliest gap across all aircraft
+    last_dates = []
+    for aircraft_icao in TRACKED_AIRCRAFT:
+        result = session.query(func.max(func.date(Flight.start_time))).filter(
+            Flight.icao == aircraft_icao
+        ).scalar()
+        if result:
+            last_dates.append(result)
+
+    if not last_dates:
+        return None
+
+    return min(last_dates)
 
 
 def upsert_flight(session, icao: str, start_time: datetime, end_time: datetime) -> dict:
