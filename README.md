@@ -5,11 +5,13 @@ Track CPD helicopter flights using ADS-B Exchange data, storing results in a Pos
 ## Features
 
 - Fetches historical flight trace data from ADS-B Exchange
+- Captures detailed flight telemetry (position, altitude, speed, heading, etc.)
 - Stores flight data in PostgreSQL with automatic deduplication
 - UPSERT logic handles in-progress flights gracefully
 - Supports multiple tracked aircraft
 - Daily automated sync via GitHub Actions
 - CSV backfill for importing historical data
+- Telemetry backfill for flights synced before telemetry capture was added
 
 ## Tracked Aircraft
 
@@ -67,6 +69,31 @@ python -m src.main --icao ad389e --start-date 2025-12-01 --end-date 2025-12-31
 python -m src.main --start-date 2025-12-16 --end-date 2025-12-17
 ```
 
+### Skip Telemetry Capture
+
+By default, syncing captures detailed telemetry (GPS coordinates, altitude, speed, etc.) for each flight. To store only flight start/end times:
+
+```bash
+python -m src.main --yesterday --no-telemetry
+```
+
+### Backfill Telemetry
+
+Retroactively fetch and store telemetry for existing flights that don't have it (e.g., flights synced before telemetry capture was added, or synced with `--no-telemetry`):
+
+```bash
+# Backfill all flights missing telemetry
+python -m src.main --backfill-telemetry
+
+# Limit to a specific aircraft
+python -m src.main --backfill-telemetry --icao ad389e
+
+# Limit to a date range
+python -m src.main --backfill-telemetry --start-date 2025-10-01 --end-date 2025-10-31
+```
+
+Flights are grouped by aircraft and date to minimize ADS-B Exchange fetches. Fetched legs are matched to existing flights by start time (within a 60-second tolerance).
+
 ### Backfill from CSV
 
 Import historical data from CSV files:
@@ -86,6 +113,18 @@ Date,Start Time (UTC),End Time (UTC)
 2025-12-16,21:30:39,22:59:20
 ```
 
+## CLI Reference
+
+| Flag | Description |
+|------|-------------|
+| `--yesterday` | Fetch flights for yesterday (UTC) |
+| `--start-date YYYY-MM-DD` | Start date for fetching flights |
+| `--end-date YYYY-MM-DD` | End date (defaults to start date if not specified) |
+| `--icao XXXXXX` | Limit to a specific aircraft ICAO code |
+| `--no-telemetry` | Skip telemetry capture, only store flight start/end times |
+| `--backfill CSV_FILE` | Import historical flights from a CSV file |
+| `--backfill-telemetry` | Retroactively fetch telemetry for flights that have none |
+
 ## Database Schema
 
 ### Flights Table
@@ -100,6 +139,24 @@ Date,Start Time (UTC),End Time (UTC)
 | updated_at | TIMESTAMPTZ | Last update time |
 
 **Unique Constraint:** `(icao, start_time)` - enables UPSERT logic
+
+### Flight Telemetry Table
+
+| Column | Type | Description |
+|--------|------|-------------|
+| id | SERIAL | Primary key |
+| flight_id | INTEGER | Foreign key to flights (CASCADE delete) |
+| timestamp | TIMESTAMPTZ | Telemetry point time (UTC) |
+| latitude | FLOAT | Latitude |
+| longitude | FLOAT | Longitude |
+| altitude | INTEGER | Barometric altitude (feet), null if on ground |
+| altitude_ground | BOOLEAN | Whether aircraft is on the ground |
+| ground_speed | FLOAT | Ground speed (knots) |
+| track | FLOAT | Track/heading (degrees) |
+| vertical_rate | INTEGER | Vertical rate (fpm) |
+| geo_altitude | INTEGER | Geometric altitude (feet) |
+| ias | INTEGER | Indicated airspeed (knots) |
+| roll_angle | FLOAT | Roll angle (degrees) |
 
 ### UPSERT Strategy
 
@@ -133,6 +190,15 @@ SELECT icao, start_time, end_time,
        end_time - start_time as duration
 FROM flights
 ORDER BY start_time DESC
+LIMIT 10;
+
+-- Flights with telemetry point counts
+SELECT f.icao, f.start_time, f.end_time,
+       COUNT(t.id) as telemetry_points
+FROM flights f
+LEFT JOIN flight_telemetry t ON f.id = t.flight_id
+GROUP BY f.id
+ORDER BY f.start_time DESC
 LIMIT 10;
 ```
 
@@ -178,7 +244,8 @@ cpd-helicopter/
 ├── tests/
 │   ├── test_database.py    # Database tests
 │   ├── test_main.py        # CLI tests
-│   └── test_scraper.py     # Scraper tests
+│   ├── test_scraper.py     # Scraper tests
+│   └── test_telemetry.py   # Telemetry storage tests
 ├── config.py               # Configuration
 ├── requirements.txt        # Dependencies
 └── .env.example            # Environment template
@@ -188,8 +255,9 @@ cpd-helicopter/
 
 1. **Fetch Data:** Uses Playwright to load ADS-B Exchange with the `showTrace` parameter for historical data
 2. **Parse Legs:** Analyzes trace data for 5+ minute gaps to identify separate flight legs
-3. **Deduplicate:** Removes duplicates based on start time
-4. **UPSERT:** Inserts new flights or updates end times for existing flights
+3. **Capture Telemetry:** Extracts GPS coordinates, altitude, speed, heading, and other data points from each trace
+4. **Deduplicate:** Removes duplicates based on start time
+5. **UPSERT:** Inserts new flights or updates end times for existing flights, storing associated telemetry
 
 ## Time Zone Note
 

@@ -16,7 +16,10 @@ from src.scraper import (
     get_date_range,
     get_yesterday,
 )
-from src.database import SessionLocal, upsert_flights, upsert_flight_with_telemetry
+from src.database import (
+    SessionLocal, upsert_flights, upsert_flight_with_telemetry,
+    get_flights_without_telemetry, insert_telemetry,
+)
 
 
 def parse_args():
@@ -55,6 +58,11 @@ def parse_args():
         '--no-telemetry',
         action='store_true',
         help='Skip telemetry capture (only store flight start/end times)'
+    )
+    parser.add_argument(
+        '--backfill-telemetry',
+        action='store_true',
+        help='Backfill telemetry for existing flights that have no telemetry data'
     )
 
     return parser.parse_args()
@@ -272,11 +280,111 @@ async def sync_flights(
         session.close()
 
 
+async def backfill_telemetry(
+    icao: str | None = None,
+    start_date: str | None = None,
+    end_date: str | None = None,
+):
+    """
+    Backfill telemetry for existing flights that have no telemetry data.
+
+    Args:
+        icao: Optional ICAO filter
+        start_date: Optional start date filter (YYYY-MM-DD)
+        end_date: Optional end date filter (YYYY-MM-DD)
+    """
+    session = SessionLocal()
+    try:
+        flights = get_flights_without_telemetry(session, icao, start_date, end_date)
+
+        if not flights:
+            print("No flights without telemetry found.", file=sys.stderr)
+            return
+
+        print(f"Found {len(flights)} flight(s) without telemetry", file=sys.stderr)
+
+        # Group flights by (icao, date) to minimize fetches
+        groups: dict[tuple[str, str], list] = {}
+        for flight in flights:
+            date_str = flight.start_time.strftime('%Y-%m-%d')
+            key = (flight.icao, date_str)
+            groups.setdefault(key, []).append(flight)
+
+        print(f"Grouped into {len(groups)} (aircraft, date) pair(s)", file=sys.stderr)
+
+        total_telemetry = 0
+        matched_flights = 0
+        tolerance_seconds = 60
+
+        for (group_icao, date_str), group_flights in groups.items():
+            print(f"\n  Fetching {group_icao} for {date_str}...", file=sys.stderr)
+
+            try:
+                trace_data = await fetch_trace_data(group_icao, date_str)
+                legs = parse_flight_legs(trace_data)
+            except ValueError as e:
+                print(f"    Error: {e}", file=sys.stderr)
+                continue
+            except Exception as e:
+                print(f"    Unexpected error: {e}", file=sys.stderr)
+                continue
+
+            if not legs:
+                print(f"    No legs found in trace data", file=sys.stderr)
+                continue
+
+            print(f"    Found {len(legs)} leg(s) in trace data", file=sys.stderr)
+
+            for flight in group_flights:
+                # Find the best matching leg by start_time
+                best_leg = None
+                best_diff = None
+                for leg in legs:
+                    diff = abs((leg['start_time'] - flight.start_time).total_seconds())
+                    if best_diff is None or diff < best_diff:
+                        best_diff = diff
+                        best_leg = leg
+
+                if best_leg and best_diff <= tolerance_seconds:
+                    telemetry = best_leg.get('telemetry', [])
+                    if telemetry:
+                        count = insert_telemetry(session, flight.id, telemetry)
+                        total_telemetry += count
+                        matched_flights += 1
+                        print(
+                            f"    Matched flight {flight.id} "
+                            f"(diff={best_diff:.0f}s): {count} points",
+                            file=sys.stderr
+                        )
+                    else:
+                        print(
+                            f"    Matched flight {flight.id} but leg has no telemetry",
+                            file=sys.stderr
+                        )
+                else:
+                    diff_str = f"{best_diff:.0f}s" if best_diff is not None else "N/A"
+                    print(
+                        f"    No match for flight {flight.id} "
+                        f"(start={flight.start_time}, closest diff={diff_str})",
+                        file=sys.stderr
+                    )
+
+        print(f"\nBackfill complete: {matched_flights} flight(s) matched, "
+              f"{total_telemetry} telemetry points inserted", file=sys.stderr)
+    finally:
+        session.close()
+
+
 def main():
     """Main entry point."""
     args = parse_args()
 
-    # Backfill mode
+    # Backfill telemetry mode
+    if args.backfill_telemetry:
+        asyncio.run(backfill_telemetry(args.icao, args.start_date, args.end_date))
+        return
+
+    # Backfill from CSV mode
     if args.backfill:
         backfill_from_csv(args.backfill, args.icao)
         return
