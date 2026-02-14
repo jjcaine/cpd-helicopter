@@ -1,0 +1,61 @@
+name: Backfill Telemetry
+
+on:
+  workflow_dispatch:
+    inputs:
+      icao:
+        description: 'Aircraft ICAO code (leave empty for all aircraft)'
+        required: false
+        type: string
+      start_date:
+        description: 'Start date (YYYY-MM-DD, leave empty for no limit)'
+        required: false
+        type: string
+      end_date:
+        description: 'End date (YYYY-MM-DD, leave empty for no limit)'
+        required: false
+        type: string
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: |
+          uv venv
+          uv pip install -r requirements.txt
+          source .venv/bin/activate
+          playwright install chromium
+
+      - name: Backfill telemetry
+        env:
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+        run: |
+          source .venv/bin/activate
+          CMD="python -m src.main --backfill-telemetry"
+          if [ -n "${{ inputs.icao }}" ]; then
+            CMD="$CMD --icao ${{ inputs.icao }}"
+          fi
+          if [ -n "${{ inputs.start_date }}" ]; then
+            CMD="$CMD --start-date ${{ inputs.start_date }}"
+          fi
+          if [ -n "${{ inputs.end_date }}" ]; then
+            CMD="$CMD --end-date ${{ inputs.end_date }}"
+          fi
+          echo "Running: $CMD"
+          $CMD
