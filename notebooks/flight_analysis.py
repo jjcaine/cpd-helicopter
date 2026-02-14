@@ -6,6 +6,18 @@ app = marimo.App(width="medium")
 
 @app.cell
 def _():
+    import subprocess
+    import sys
+
+    subprocess.check_call(
+        [sys.executable, "-m", "pip", "install", "-q",
+         "marimo", "pandas", "plotly", "pyarrow", "sqlalchemy", "psycopg2-binary"]
+    )
+    return
+
+
+@app.cell
+def _():
     import marimo as mo
     return (mo,)
 
