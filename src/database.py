@@ -1,6 +1,6 @@
 """Database connection and session management."""
 
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.dialects.postgresql import insert
@@ -212,6 +212,48 @@ def insert_telemetry(session, flight_id: int, telemetry_points: list[dict]) -> i
     session.commit()
 
     return len(records)
+
+
+def get_flights_without_telemetry(
+    session,
+    icao: str | None = None,
+    start_date: str | None = None,
+    end_date: str | None = None,
+) -> list:
+    """
+    Query flights that have no telemetry points.
+
+    Args:
+        session: SQLAlchemy session
+        icao: Optional ICAO filter
+        start_date: Optional start date filter (YYYY-MM-DD)
+        end_date: Optional end date filter (YYYY-MM-DD)
+
+    Returns:
+        list: List of Flight objects with no telemetry
+    """
+    query = (
+        session.query(Flight)
+        .outerjoin(FlightTelemetry, Flight.id == FlightTelemetry.flight_id)
+        .group_by(Flight.id)
+        .having(func.count(FlightTelemetry.id) == 0)
+    )
+
+    if icao:
+        query = query.filter(Flight.icao == icao)
+    if start_date:
+        start_dt = datetime.strptime(start_date, '%Y-%m-%d').replace(
+            tzinfo=timezone.utc
+        )
+        query = query.filter(Flight.start_time >= start_dt)
+    if end_date:
+        end_dt = datetime.strptime(end_date, '%Y-%m-%d').replace(
+            hour=23, minute=59, second=59, microsecond=999999,
+            tzinfo=timezone.utc
+        )
+        query = query.filter(Flight.start_time <= end_dt)
+
+    return query.order_by(Flight.start_time).all()
 
 
 def upsert_flight_with_telemetry(

@@ -5,7 +5,8 @@ from datetime import datetime, timezone, timedelta
 
 from src.database import (
     SessionLocal, upsert_flight, insert_telemetry,
-    delete_flight_telemetry, upsert_flight_with_telemetry
+    delete_flight_telemetry, upsert_flight_with_telemetry,
+    get_flights_without_telemetry,
 )
 from src.models import Flight, FlightTelemetry
 
@@ -317,3 +318,77 @@ class TestFlightTelemetryRelationship:
         # Verify telemetry was cascade deleted
         points = db_session.query(FlightTelemetry).filter_by(flight_id=flight_id).all()
         assert len(points) == 0
+
+
+class TestGetFlightsWithoutTelemetry:
+    """Tests for get_flights_without_telemetry function."""
+
+    def test_returns_flights_without_telemetry(self, db_session, cleanup_test_data):
+        """Flights with no telemetry should be returned."""
+        start_time = datetime(2025, 2, 1, 10, 0, 0, tzinfo=timezone.utc)
+        end_time = datetime(2025, 2, 1, 11, 0, 0, tzinfo=timezone.utc)
+        upsert_flight(db_session, 'telemb', start_time, end_time)
+
+        flights = get_flights_without_telemetry(db_session)
+        icaos = [f.icao for f in flights]
+        assert 'telemb' in icaos
+
+    def test_excludes_flights_with_telemetry(self, db_session, cleanup_test_data):
+        """Flights with telemetry should not be returned."""
+        start_time = datetime(2025, 2, 2, 10, 0, 0, tzinfo=timezone.utc)
+        end_time = datetime(2025, 2, 2, 11, 0, 0, tzinfo=timezone.utc)
+
+        # Flight with telemetry
+        upsert_flight_with_telemetry(
+            db_session, 'telemc', start_time, end_time,
+            [{'timestamp': start_time, 'latitude': 41.8, 'longitude': -87.6}]
+        )
+        # Flight without telemetry
+        upsert_flight(db_session, 'telemd', start_time, end_time)
+
+        flights = get_flights_without_telemetry(db_session)
+        icaos = [f.icao for f in flights]
+        assert 'telemd' in icaos
+        assert 'telemc' not in icaos
+
+    def test_icao_filter(self, db_session, cleanup_test_data):
+        """ICAO filter should limit results."""
+        start_time = datetime(2025, 2, 3, 10, 0, 0, tzinfo=timezone.utc)
+        end_time = datetime(2025, 2, 3, 11, 0, 0, tzinfo=timezone.utc)
+
+        upsert_flight(db_session, 'teleme', start_time, end_time)
+        upsert_flight(db_session, 'telemf', start_time, end_time)
+
+        flights = get_flights_without_telemetry(db_session, icao='teleme')
+        icaos = [f.icao for f in flights]
+        assert 'teleme' in icaos
+        assert 'telemf' not in icaos
+
+    def test_date_range_filter(self, db_session, cleanup_test_data):
+        """Date range filter should limit results."""
+        # Flight on Feb 4
+        upsert_flight(
+            db_session, 'telemg',
+            datetime(2025, 2, 4, 10, 0, 0, tzinfo=timezone.utc),
+            datetime(2025, 2, 4, 11, 0, 0, tzinfo=timezone.utc),
+        )
+        # Flight on Feb 6
+        upsert_flight(
+            db_session, 'telemh',
+            datetime(2025, 2, 6, 10, 0, 0, tzinfo=timezone.utc),
+            datetime(2025, 2, 6, 11, 0, 0, tzinfo=timezone.utc),
+        )
+
+        flights = get_flights_without_telemetry(
+            db_session, start_date='2025-02-05', end_date='2025-02-07'
+        )
+        icaos = [f.icao for f in flights]
+        assert 'telemh' in icaos
+        assert 'telemg' not in icaos
+
+    def test_no_flights_returns_empty(self, db_session, cleanup_test_data):
+        """Should return empty list when no flights match."""
+        flights = get_flights_without_telemetry(
+            db_session, icao='nonexistent'
+        )
+        assert flights == []
