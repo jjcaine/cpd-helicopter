@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.sql import func
 
-from config import get_database_url
+from src.config import get_database_url
 from src.models import Base, Flight, FlightTelemetry
 
 engine = create_engine(get_database_url())
@@ -38,7 +38,7 @@ def get_last_ingested_date(session, icao: str = None) -> date | None:
     Returns:
         date: The most recent date with flight data, or None if no data exists
     """
-    from config import TRACKED_AIRCRAFT
+    from src.config import TRACKED_AIRCRAFT
 
     if icao:
         # Get last date for specific aircraft

@@ -23,20 +23,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
       - name: Install uv
         uses: astral-sh/setup-uv@v5
 
       - name: Install dependencies
         run: |
-          uv venv
-          uv pip install -r requirements.txt
-          source .venv/bin/activate
-          playwright install chromium
+          uv sync
+          uv run playwright install chromium
 
       - name: Backfill telemetry
         env:
@@ -46,8 +39,7 @@ jobs:
           DB_PORT: ${{ secrets.DB_PORT }}
           DB_NAME: ${{ secrets.DB_NAME }}
         run: |
-          source .venv/bin/activate
-          CMD="python -m src.main --backfill-telemetry"
+          CMD="uv run python -m src.main --backfill-telemetry"
           if [ -n "${{ inputs.icao }}" ]; then
             CMD="$CMD --icao ${{ inputs.icao }}"
           fi

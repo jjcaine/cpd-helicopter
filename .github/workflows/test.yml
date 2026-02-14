@@ -28,18 +28,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
       - name: Install uv
         uses: astral-sh/setup-uv@v5
 
       - name: Install dependencies
-        run: |
-          uv venv
-          uv pip install -r requirements.txt
+        run: uv sync
 
       - name: Initialize database
         env:
@@ -49,9 +42,7 @@ jobs:
           DB_PORT: 5432
           DB_NAME: cpd_helicopter_test
           DB_SSLMODE: disable
-        run: |
-          source .venv/bin/activate
-          python -c "from src.database import init_db; init_db()"
+        run: uv run python -c "from src.database import init_db; init_db()"
 
       - name: Run tests
         env:
@@ -61,6 +52,4 @@ jobs:
           DB_PORT: 5432
           DB_NAME: cpd_helicopter_test
           DB_SSLMODE: disable
-        run: |
-          source .venv/bin/activate
-          python -m pytest tests/ -v --tb=short
+        run: uv run python -m pytest tests/ -v --tb=short

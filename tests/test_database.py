@@ -204,7 +204,7 @@ class TestGetLastIngestedDate:
         result = get_last_ingested_date(db_session, 'test11')
         assert result == date(2025, 4, 10)
 
-    @patch('config.TRACKED_AIRCRAFT', ['test12', 'test13'])
+    @patch('src.config.TRACKED_AIRCRAFT', ['test12', 'test13'])
     def test_no_icao_returns_earliest_last_date(self, db_session, cleanup_test_flights):
         """When no icao specified, should return earliest last date across tracked aircraft."""
         # test12 has data up to March 25
@@ -230,7 +230,7 @@ class TestGetLastIngestedDate:
         # Should return March 20 (the earliest last date)
         assert result == date(2025, 3, 20)
 
-    @patch('config.TRACKED_AIRCRAFT', ['test14', 'test15'])
+    @patch('src.config.TRACKED_AIRCRAFT', ['test14', 'test15'])
     def test_no_icao_with_one_aircraft_missing_data(self, db_session, cleanup_test_flights):
         """When one tracked aircraft has no data, should only consider aircraft with data."""
         # Only test14 has data
@@ -247,7 +247,7 @@ class TestGetLastIngestedDate:
         # Should return May 10 (the only aircraft with data)
         assert result == date(2025, 5, 10)
 
-    @patch('config.TRACKED_AIRCRAFT', ['test16', 'test17'])
+    @patch('src.config.TRACKED_AIRCRAFT', ['test16', 'test17'])
     def test_no_icao_all_missing_data(self, db_session, cleanup_test_flights):
         """When no tracked aircraft have data, should return None."""
         result = get_last_ingested_date(db_session)

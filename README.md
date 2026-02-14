@@ -32,15 +32,11 @@ Track CPD helicopter flights using ADS-B Exchange data, storing results in a Pos
 ### Setup
 
 ```bash
-# Create virtual environment
-uv venv
-
 # Install dependencies
-uv pip install -r requirements.txt
+uv sync
 
 # Install Playwright browser
-source .venv/bin/activate
-playwright install chromium
+uv run playwright install chromium
 
 # Configure database
 cp .env.example .env
@@ -243,8 +239,7 @@ Configure these in your repository settings (Settings → Secrets → Actions):
 ### Running Tests
 
 ```bash
-source .venv/bin/activate
-python -m pytest tests/ -v
+uv run pytest tests/ -v
 ```
 
 ### Project Structure
@@ -257,6 +252,7 @@ cpd-helicopter/
 │   └── test.yml                # PR test runner
 ├── src/
 │   ├── __init__.py
+│   ├── config.py           # Configuration
 │   ├── database.py         # Database connection & UPSERT logic
 │   ├── main.py             # CLI entry point
 │   ├── models.py           # SQLAlchemy models
@@ -266,8 +262,8 @@ cpd-helicopter/
 │   ├── test_main.py        # CLI tests
 │   ├── test_scraper.py     # Scraper tests
 │   └── test_telemetry.py   # Telemetry storage tests
-├── config.py               # Configuration
-├── requirements.txt        # Dependencies
+├── pyproject.toml          # Project metadata & dependencies
+├── uv.lock                 # Dependency lockfile
 └── .env.example            # Environment template
 ```
 

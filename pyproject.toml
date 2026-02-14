@@ -1,0 +1,16 @@
+[project]
+name = "cpd-helicopter"
+version = "1.0.0"
+description = "Track CPD helicopter flights using ADS-B Exchange data"
+requires-python = ">=3.11"
+dependencies = [
+    "playwright>=1.40.0",
+    "sqlalchemy>=2.0.0",
+    "psycopg2-binary>=2.9.9",
+    "python-dotenv>=1.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+]

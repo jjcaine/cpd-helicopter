@@ -12,20 +12,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
       - name: Install uv
         uses: astral-sh/setup-uv@v5
 
       - name: Install dependencies
         run: |
-          uv venv
-          uv pip install -r requirements.txt
-          source .venv/bin/activate
-          playwright install chromium
+          uv sync
+          uv run playwright install chromium
 
       - name: Fetch flights with automatic backfill
         env:
@@ -34,9 +27,7 @@ jobs:
           DB_HOST: ${{ secrets.DB_HOST }}
           DB_PORT: ${{ secrets.DB_PORT }}
           DB_NAME: ${{ secrets.DB_NAME }}
-        run: |
-          source .venv/bin/activate
-          python -m src.main --auto-backfill
+        run: uv run python -m src.main --auto-backfill
 
       - name: Notify on success
         if: success()

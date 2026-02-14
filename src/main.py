@@ -8,7 +8,7 @@ import sys
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
-from config import TRACKED_AIRCRAFT
+from src.config import TRACKED_AIRCRAFT
 from src.scraper import (
     fetch_trace_data,
     parse_flight_legs,
