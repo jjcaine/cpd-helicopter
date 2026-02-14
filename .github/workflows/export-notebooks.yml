@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'notebooks/*.py'
+  workflow_dispatch:
 
 jobs:
   export:
