@@ -1,0 +1,38 @@
+name: Export Notebooks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'notebooks/*.py'
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Export marimo notebooks to ipynb
+        run: |
+          for notebook in notebooks/*.py; do
+            output="${notebook%.py}.ipynb"
+            echo "Exporting $notebook -> $output"
+            uv run marimo export ipynb "$notebook" -o "$output"
+          done
+
+      - name: Commit exported notebooks
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add notebooks/*.ipynb
+          git diff --staged --quiet || git commit -m "Export marimo notebooks to ipynb"
+          git push
