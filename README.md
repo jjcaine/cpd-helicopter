@@ -12,6 +12,7 @@ Track CPD helicopter flights using ADS-B Exchange data, storing results in a Pos
 - Daily automated sync via GitHub Actions
 - CSV backfill for importing historical data
 - Telemetry backfill for flights synced before telemetry capture was added
+- Automatic backfill of missed days if the daily sync is interrupted
 
 ## Tracked Aircraft
 
@@ -94,6 +95,16 @@ python -m src.main --backfill-telemetry --start-date 2025-10-01 --end-date 2025-
 
 Flights are grouped by aircraft and date to minimize ADS-B Exchange fetches. Fetched legs are matched to existing flights by start time (within a 60-second tolerance).
 
+### Auto-Backfill Missed Days
+
+Automatically detect and backfill any days missed since the last ingested flight data (e.g., if the daily sync was down for a few days):
+
+```bash
+python -m src.main --auto-backfill
+```
+
+This checks the last ingested date for each tracked aircraft and fetches all missing days up through yesterday. The daily GitHub Actions sync uses this by default.
+
 ### Backfill from CSV
 
 Import historical data from CSV files:
@@ -124,6 +135,7 @@ Date,Start Time (UTC),End Time (UTC)
 | `--no-telemetry` | Skip telemetry capture, only store flight start/end times |
 | `--backfill CSV_FILE` | Import historical flights from a CSV file |
 | `--backfill-telemetry` | Retroactively fetch telemetry for flights that have none |
+| `--auto-backfill` | Automatically backfill any missed days since last ingested date |
 
 ## Database Schema
 
@@ -204,7 +216,17 @@ LIMIT 10;
 
 ## GitHub Actions
 
-The repository includes a GitHub Actions workflow that runs daily at 6 AM UTC to sync yesterday's flights.
+### Daily Sync (`daily-sync.yml`)
+
+Runs daily at 6 AM UTC using `--auto-backfill` to sync yesterday's flights and automatically catch up any missed days.
+
+### Backfill Telemetry (`backfill-telemetry.yml`)
+
+Manually triggered from the Actions tab to retroactively fetch telemetry for existing flights. Accepts optional inputs for ICAO, start date, and end date.
+
+### Tests (`test.yml`)
+
+Runs the test suite on pull requests.
 
 ### Required Secrets
 
@@ -215,10 +237,6 @@ Configure these in your repository settings (Settings → Secrets → Actions):
 - `DB_HOST` - Database host
 - `DB_PORT` - Database port
 - `DB_NAME` - Database name
-
-### Manual Trigger
-
-You can manually trigger the workflow from the Actions tab using "Run workflow".
 
 ## Development
 
@@ -234,7 +252,9 @@ python -m pytest tests/ -v
 ```
 cpd-helicopter/
 ├── .github/workflows/
-│   └── daily-sync.yml      # GitHub Actions workflow
+│   ├── backfill-telemetry.yml  # Manual telemetry backfill workflow
+│   ├── daily-sync.yml          # Daily auto-backfill sync
+│   └── test.yml                # PR test runner
 ├── src/
 │   ├── __init__.py
 │   ├── database.py         # Database connection & UPSERT logic
