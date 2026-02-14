@@ -5,7 +5,7 @@ import asyncio
 import csv
 import re
 import sys
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from config import TRACKED_AIRCRAFT
@@ -18,8 +18,31 @@ from src.scraper import (
 )
 from src.database import (
     SessionLocal, upsert_flights, upsert_flight_with_telemetry,
-    get_flights_without_telemetry, insert_telemetry,
+    get_flights_without_telemetry, insert_telemetry, get_last_ingested_date,
 )
+
+
+def compute_missing_dates(last_date: date, target_date: date) -> list[str]:
+    """
+    Compute the list of dates needing backfill.
+
+    Args:
+        last_date: The last date with ingested data
+        target_date: The target date to backfill up to (inclusive)
+
+    Returns:
+        list: List of date strings in YYYY-MM-DD format (last_date+1 to target_date inclusive)
+    """
+    if last_date >= target_date:
+        return []
+
+    missing_dates = []
+    current = last_date + timedelta(days=1)
+    while current <= target_date:
+        missing_dates.append(current.strftime('%Y-%m-%d'))
+        current += timedelta(days=1)
+
+    return missing_dates
 
 
 def parse_args():
@@ -63,6 +86,11 @@ def parse_args():
         '--backfill-telemetry',
         action='store_true',
         help='Backfill telemetry for existing flights that have no telemetry data'
+    )
+    parser.add_argument(
+        '--auto-backfill',
+        action='store_true',
+        help='Automatically backfill any missed days since last ingested date'
     )
 
     return parser.parse_args()
@@ -375,6 +403,64 @@ async def backfill_telemetry(
         session.close()
 
 
+def run_auto_backfill(aircraft: list[str], include_telemetry: bool):
+    """
+    Run automatic backfill for any missed days.
+
+    Queries DB for last ingested date per aircraft, computes gap to yesterday,
+    and fetches missing days sequentially.
+
+    Args:
+        aircraft: List of ICAO codes
+        include_telemetry: Whether to capture and store telemetry data
+    """
+    yesterday_str = get_yesterday()
+    yesterday = datetime.strptime(yesterday_str, '%Y-%m-%d').date()
+
+    session = SessionLocal()
+    try:
+        # Check last ingested date for each aircraft
+        last_dates = {}
+        for icao in aircraft:
+            last_date = get_last_ingested_date(session, icao)
+            last_dates[icao] = last_date
+            if last_date:
+                print(f"Checking last ingested date for {icao}... {last_date}", file=sys.stderr)
+            else:
+                print(f"Checking last ingested date for {icao}... no data", file=sys.stderr)
+
+        print(f"Target date: {yesterday} (yesterday)", file=sys.stderr)
+
+        # Find the earliest last date across all aircraft (or None if any have no data)
+        valid_dates = [d for d in last_dates.values() if d is not None]
+
+        if not valid_dates:
+            # No existing data - just fetch yesterday
+            print("No existing data found, fetching yesterday only.", file=sys.stderr)
+            asyncio.run(sync_flights(aircraft, yesterday_str, None, include_telemetry))
+            return
+
+        earliest_last_date = min(valid_dates)
+
+        # Compute missing dates
+        missing_dates = compute_missing_dates(earliest_last_date, yesterday)
+
+        if not missing_dates:
+            print("No gaps detected, fetching yesterday only.", file=sys.stderr)
+            asyncio.run(sync_flights(aircraft, yesterday_str, None, include_telemetry))
+            return
+
+        print(f"Gap detected! Backfilling {len(missing_dates)} day(s): {', '.join(missing_dates)}", file=sys.stderr)
+
+        # Process each missing date sequentially
+        for date_str in missing_dates:
+            print(f"\nProcessing {date_str}...", file=sys.stderr)
+            asyncio.run(sync_flights(aircraft, date_str, None, include_telemetry))
+
+    finally:
+        session.close()
+
+
 def main():
     """Main entry point."""
     args = parse_args()
@@ -389,6 +475,20 @@ def main():
         backfill_from_csv(args.backfill, args.icao)
         return
 
+    # Determine aircraft list
+    if args.icao:
+        aircraft = [args.icao]
+    else:
+        aircraft = TRACKED_AIRCRAFT
+        print(f"Using tracked aircraft: {', '.join(aircraft)}", file=sys.stderr)
+
+    include_telemetry = not args.no_telemetry
+
+    # Auto-backfill mode
+    if args.auto_backfill:
+        run_auto_backfill(aircraft, include_telemetry)
+        return
+
     # Determine date range
     if args.yesterday:
         start_date = get_yesterday()
@@ -397,18 +497,10 @@ def main():
         start_date = args.start_date
         end_date = args.end_date
     else:
-        print("Error: Must specify --yesterday or --start-date", file=sys.stderr)
+        print("Error: Must specify --yesterday, --start-date, or --auto-backfill", file=sys.stderr)
         sys.exit(1)
 
-    # Determine aircraft list
-    if args.icao:
-        aircraft = [args.icao]
-    else:
-        aircraft = TRACKED_AIRCRAFT
-        print(f"Using tracked aircraft: {', '.join(aircraft)}", file=sys.stderr)
-
     # Run async sync
-    include_telemetry = not args.no_telemetry
     asyncio.run(sync_flights(aircraft, start_date, end_date, include_telemetry))
 
 

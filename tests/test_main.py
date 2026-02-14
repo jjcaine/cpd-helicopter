@@ -3,9 +3,9 @@
 import pytest
 import tempfile
 import os
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
-from src.main import extract_icao_from_filename, parse_csv_file
+from src.main import extract_icao_from_filename, parse_csv_file, compute_missing_dates
 
 
 class TestExtractIcaoFromFilename:
@@ -94,3 +94,69 @@ class TestParseCsvFile:
                 assert len(flights) == 0
             finally:
                 os.unlink(f.name)
+
+
+class TestComputeMissingDates:
+    """Tests for compute_missing_dates function."""
+
+    def test_no_gap_returns_empty(self):
+        """When last_date equals target_date, should return empty list."""
+        last_date = date(2025, 3, 15)
+        target_date = date(2025, 3, 15)
+
+        result = compute_missing_dates(last_date, target_date)
+        assert result == []
+
+    def test_last_date_after_target_returns_empty(self):
+        """When last_date is after target_date, should return empty list."""
+        last_date = date(2025, 3, 20)
+        target_date = date(2025, 3, 15)
+
+        result = compute_missing_dates(last_date, target_date)
+        assert result == []
+
+    def test_single_day_gap(self):
+        """Should return single date when gap is one day."""
+        last_date = date(2025, 3, 14)
+        target_date = date(2025, 3, 15)
+
+        result = compute_missing_dates(last_date, target_date)
+        assert result == ['2025-03-15']
+
+    def test_multi_day_gap(self):
+        """Should return all dates in the gap."""
+        last_date = date(2025, 3, 10)
+        target_date = date(2025, 3, 15)
+
+        result = compute_missing_dates(last_date, target_date)
+        assert result == [
+            '2025-03-11',
+            '2025-03-12',
+            '2025-03-13',
+            '2025-03-14',
+            '2025-03-15',
+        ]
+
+    def test_month_boundary(self):
+        """Should handle month boundaries correctly."""
+        last_date = date(2025, 1, 30)
+        target_date = date(2025, 2, 2)
+
+        result = compute_missing_dates(last_date, target_date)
+        assert result == [
+            '2025-01-31',
+            '2025-02-01',
+            '2025-02-02',
+        ]
+
+    def test_year_boundary(self):
+        """Should handle year boundaries correctly."""
+        last_date = date(2024, 12, 30)
+        target_date = date(2025, 1, 2)
+
+        result = compute_missing_dates(last_date, target_date)
+        assert result == [
+            '2024-12-31',
+            '2025-01-01',
+            '2025-01-02',
+        ]
