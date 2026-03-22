@@ -12,20 +12,20 @@ const sleepPct = Math.round((sleepHours / totalFlightHours) * 100);
 ---
 
 <BaseLayout>
-  <section class="hero section">
-    <div class="container">
-      <h1>Cleveland police helicopters fly over your neighborhood almost every night.</h1>
-      <p class="hero-subtitle">Here's the data.</p>
-
-      <HeroStats
-        totalFlights={stats.total_flights}
-        totalDays={stats.total_days}
-        costEstimateLow={stats.cost_estimate_low}
-        costEstimateHigh={stats.cost_estimate_high}
-        totalHours={stats.total_hours}
-        pctAfter7pm={windDownPct + sleepPct}
-      />
-
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-grid">
+        <div class="hero-headline">
+          <span class="hero-eyebrow">Cleveland Police Helicopter Tracker</span>
+          <h1>They fly over your neighborhood almost every night.</h1>
+        </div>
+        <div class="hero-quote">
+          <blockquote>
+            Cleveland police helicopters flew <strong>{stats.total_flights}</strong> times in <strong>{stats.total_days}</strong> days. <strong>{windDownPct + sleepPct}%</strong> of those flights happened after 7&nbsp;PM.
+          </blockquote>
+        </div>
+      </div>
       {stats.date_start && stats.date_end && (
         <p class="hero-date-range">
           Based on {stats.total_flights} flights tracked from {stats.date_start} to {stats.date_end}.
@@ -34,41 +34,90 @@ const sleepPct = Math.round((sleepHours / totalFlightHours) * 100);
     </div>
   </section>
 
-  <section class="section" id="calendar">
-    <div class="container">
-      <h2>When they fly</h2>
-      <p>Every day, colored by hours of helicopter activity. The darker the square, the longer they flew.</p>
-      <div class="chart-container" id="calendar-chart"></div>
-    </div>
-  </section>
+  <!-- ============ DASHBOARD: 3 / 6 / 3 ============ -->
+  <section class="dashboard">
+    <div class="dashboard-inner">
+      <div class="dashboard-grid">
+        <!-- LEFT COL: stat cards stacked -->
+        <div class="dashboard-left">
+          <HeroStats
+            totalFlights={stats.total_flights}
+            totalDays={stats.total_days}
+            costEstimateLow={stats.cost_estimate_low}
+            costEstimateHigh={stats.cost_estimate_high}
+            totalHours={stats.total_hours}
+            pctAfter7pm={windDownPct + sleepPct}
+          />
+        </div>
 
-  <section class="section" id="time-of-day">
-    <div class="container">
-      <h2>What time they fly</h2>
-      <p>Most flights happen in the evening and at night — not during the day.</p>
-      <div class="time-stats">
-        <div class="time-stat">
-          <span class="time-stat-number">{windDownPct}%</span>
-          <span class="time-stat-label">during wind-down hours <span class="time-stat-range">7 PM – 10 PM</span></span>
+        <!-- CENTER COL: map -->
+        <div class="dashboard-center">
+          <div class="panel-header">
+            <h2>Where they fly</h2>
+            <p>Flight paths plotted on the map. See which neighborhoods get circled the most.</p>
+          </div>
+          <div class="chart-container chart-container--map" id="flight-map"></div>
         </div>
-        <div class="time-stat">
-          <span class="time-stat-number">{sleepPct}%</span>
-          <span class="time-stat-label">during sleeping hours <span class="time-stat-range">10 PM – 5 AM</span></span>
-        </div>
-        <div class="time-stat">
-          <span class="time-stat-number">{windDownPct + sleepPct}%</span>
-          <span class="time-stat-label">of all flights after 7 PM</span>
+
+        <!-- RIGHT COL: calendar + histogram stacked -->
+        <div class="dashboard-right">
+          <div class="right-panel">
+            <div class="panel-header">
+              <h2>When they fly</h2>
+              <p>Every day, colored by hours of helicopter activity.</p>
+            </div>
+            <div class="chart-container" id="calendar-chart"></div>
+          </div>
+          <div class="right-panel">
+            <div class="panel-header">
+              <h2>What time</h2>
+              <p>Most flights happen in the evening and at night.</p>
+            </div>
+            <div class="time-stats">
+              <div class="time-stat">
+                <span class="time-stat-number">{windDownPct}%</span>
+                <span class="time-stat-label">wind-down hours <span class="time-stat-range">7–10 PM</span></span>
+              </div>
+              <div class="time-stat">
+                <span class="time-stat-number">{sleepPct}%</span>
+                <span class="time-stat-label">sleeping hours <span class="time-stat-range">10 PM–5 AM</span></span>
+              </div>
+            </div>
+            <div class="chart-container" id="histogram-chart"></div>
+          </div>
         </div>
       </div>
-      <div class="chart-container" id="histogram-chart"></div>
     </div>
   </section>
 
-  <section class="section" id="map">
-    <div class="container">
-      <h2>Where they fly</h2>
-      <p>Flight paths plotted on the map. See which neighborhoods get circled the most.</p>
-      <div class="chart-container chart-container--map" id="flight-map"></div>
+  <!-- ============ CONTENT SECTION ============ -->
+  <section class="content-section">
+    <div class="content-inner">
+      <div class="content-grid">
+        <div class="content-editorial">
+          <h2>Why this matters</h2>
+          <p>
+            CPD spent <strong>$3.5 million</strong> of taxpayer money to refurbish two helicopters.
+            They fly almost every night, often circling low over residential neighborhoods during hours
+            when families are winding down and sleeping.
+          </p>
+          <p>
+            At ground level, these helicopters produce approximately <strong>82 dB</strong> of noise.
+            The World Health Organization says <strong>40 dB</strong> is the safe limit for nighttime
+            noise exposure. That means residents are exposed to noise levels more than double the
+            recommended maximum.
+          </p>
+        </div>
+        <div class="content-cta-card">
+          <span class="cta-eyebrow">Get involved</span>
+          <h3>Your voice matters</h3>
+          <p>
+            Learn about the research behind helicopter noise and its health effects,
+            then contact your city council representative.
+          </p>
+          <a href="/research/" class="cta-button">Read the research &rarr;</a>
+        </div>
+      </div>
     </div>
   </section>
 </BaseLayout>
@@ -98,26 +147,147 @@ const sleepPct = Math.round((sleepHours / totalFlightHours) * 100);
 </script>
 
 <style>
-  .hero h1 {
-    font-size: 2rem;
-    max-width: 40rem;
+  /* ============ HERO ============ */
+  .hero {
+    background-color: var(--color-surface-1);
+    padding: var(--space-3xl) var(--space-xl) var(--space-2xl);
   }
 
-  .hero-subtitle {
-    font-size: 1.25rem;
+  .hero-inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+  }
+
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+    align-items: start;
+  }
+
+  .hero-eyebrow {
+    display: block;
+    font-family: var(--font-body);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--color-primary);
+    margin-bottom: var(--space-md);
+  }
+
+  .hero h1 {
+    font-family: var(--font-heading);
+    font-size: 3.5rem;
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    color: var(--color-text);
+  }
+
+  .hero-quote {
+    background-color: var(--color-surface-2);
+    border-left: 4px solid var(--color-primary);
+    padding: var(--space-lg);
+  }
+
+  .hero-quote blockquote {
+    font-family: var(--font-heading);
+    font-size: 1.125rem;
+    font-style: italic;
+    line-height: 1.6;
     color: var(--color-text-secondary);
-    margin-top: var(--space-sm);
+  }
+
+  .hero-quote blockquote strong {
+    color: var(--color-text);
+    font-style: normal;
   }
 
   .hero-date-range {
     font-size: 0.8125rem;
     color: var(--color-text-muted);
+    margin-top: var(--space-lg);
+  }
+
+  @media (min-width: 768px) {
+    .hero {
+      padding: var(--space-4xl) var(--space-xl) var(--space-2xl);
+    }
+
+    .hero-grid {
+      grid-template-columns: 8fr 4fr;
+      gap: var(--space-2xl);
+    }
+
+    .hero h1 {
+      font-size: 4.5rem;
+    }
+  }
+
+  /* ============ DASHBOARD ============ */
+  .dashboard {
+    background-color: var(--color-bg);
+    padding: var(--space-2xl) var(--space-xl) var(--space-3xl);
+  }
+
+  .dashboard-inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+  }
+
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+  }
+
+  .dashboard-left {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .dashboard-center {
+    min-width: 0;
+  }
+
+  .dashboard-right {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xl);
+  }
+
+  .right-panel {
+    /* no extra styling needed, just a grouping wrapper */
+  }
+
+  .panel-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: var(--space-xs);
+  }
+
+  .panel-header p {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    margin-bottom: 0;
+  }
+
+  .chart-container {
+    margin-top: var(--space-md);
+  }
+
+  .chart-container--map {
+    position: relative;
+    background-color: var(--color-surface-1);
+    height: 400px;
   }
 
   .time-stats {
     display: flex;
     gap: var(--space-lg);
-    margin-top: var(--space-lg);
+    margin-top: var(--space-md);
     flex-wrap: wrap;
   }
 
@@ -136,40 +306,130 @@ const sleepPct = Math.round((sleepHours / totalFlightHours) * 100);
   }
 
   .time-stat-label {
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     color: var(--color-text-secondary);
   }
 
   .time-stat-range {
     color: var(--color-text-muted);
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
   }
 
-  .chart-container {
-    margin-top: var(--space-lg);
+  @media (min-width: 1024px) {
+    .dashboard-grid {
+      grid-template-columns: 3fr 6fr 3fr;
+      gap: var(--space-xl);
+    }
+
+    .chart-container--map {
+      height: 700px;
+    }
   }
 
-  .chart-container--map {
-    position: relative;
-    background-color: var(--color-bg);
-    height: 350px;
-  }
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .dashboard-grid {
+      grid-template-columns: 1fr 1fr;
+    }
 
-  @media (min-width: 768px) {
+    .dashboard-center {
+      grid-column: 1 / -1;
+      order: -1;
+    }
+
     .chart-container--map {
       height: 500px;
     }
   }
 
-  @media (min-width: 768px) {
-    .hero h1 {
-      font-size: 2.75rem;
-    }
+  /* ============ CONTENT SECTION ============ */
+  .content-section {
+    background-color: var(--color-surface-1);
+    padding: var(--space-3xl) var(--space-xl);
   }
 
-  @media (min-width: 1024px) {
-    .hero h1 {
-      font-size: 3.25rem;
+  .content-inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+  }
+
+  .content-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+  }
+
+  .content-editorial h2 {
+    font-size: 1.75rem;
+    margin-bottom: var(--space-md);
+  }
+
+  .content-editorial p {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--color-text-secondary);
+  }
+
+  .content-editorial p strong {
+    color: var(--color-text);
+  }
+
+  .content-cta-card {
+    background-color: var(--color-surface-2);
+    padding: var(--space-xl);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    align-self: start;
+  }
+
+  .cta-eyebrow {
+    font-family: var(--font-body);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--color-primary);
+  }
+
+  .content-cta-card h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+
+  .content-cta-card p {
+    font-size: 0.9375rem;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+  }
+
+  .cta-button {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(45deg, #f59e0b 0%, #b97500 100%);
+    color: #0c0e10;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: opacity 0.15s ease;
+    align-self: flex-start;
+  }
+
+  .cta-button:hover {
+    opacity: 0.9;
+    color: #0c0e10;
+  }
+
+  @media (min-width: 768px) {
+    .content-section {
+      padding: var(--space-3xl);
+    }
+
+    .content-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-2xl);
     }
   }
 </style>

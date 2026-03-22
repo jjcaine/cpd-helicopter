@@ -37,28 +37,43 @@ const rows = flights.map(f => ({
 ---
 
 <BaseLayout title="Activity" description="Recent Cleveland Police helicopter flights. Look up when the helicopter was flying over your neighborhood.">
-  <section class="section">
-    <div class="container">
-      <h1>Was that the police helicopter?</h1>
-      <p class="page-subtitle">
-        Look up when the Cleveland Police helicopters were flying. All times are Eastern.
-      </p>
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-grid">
+        <div class="hero-headline">
+          <span class="hero-eyebrow">Flight Log</span>
+          <h1>Was that the police helicopter?</h1>
+          <p class="hero-subtitle">
+            Look up when the Cleveland Police helicopters were flying. All times are Eastern.
+          </p>
+        </div>
+        <div class="hero-quote">
+          <h2 class="recent-heading">Last recorded flights</h2>
+          <p class="recent-date">{recentDateFormatted}</p>
+          <ul class="recent-list">
+            {recentFlights.map(f => (
+              <li class="recent-item">
+                <span class="recent-aircraft">{f.registration}</span>
+                <span class="recent-time">{f.start_time} &ndash; {f.end_time}</span>
+                <span class="recent-duration">{formatDuration(f.duration_minutes)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
 
-      <!-- Last night quick view -->
-      <div class="recent-box">
-        <h2 class="recent-heading">Last recorded flights: {recentDateFormatted}</h2>
-        <ul class="recent-list">
-          {recentFlights.map(f => (
-            <li class="recent-item">
-              <span class="recent-aircraft">{f.registration}</span>
-              <span class="recent-time">{f.start_time} &ndash; {f.end_time}</span>
-              <span class="recent-duration">{formatDuration(f.duration_minutes)}</span>
-            </li>
-          ))}
-        </ul>
+  <!-- ============ TABLE SECTION ============ -->
+  <section class="table-section">
+    <div class="table-section-inner">
+      <div class="panel-header">
+        <span class="panel-eyebrow">All flights</span>
+        <h2>Complete flight history</h2>
+        <p>Every CPD helicopter flight we have tracked, sorted by date.</p>
       </div>
 
-      <!-- Desktop table -->
       <div class="table-wrap" id="table-wrap">
         <table id="flights-table">
           <thead>
@@ -98,27 +113,74 @@ const rows = flights.map(f => ({
 </BaseLayout>
 
 <style>
-  h1 {
-    font-size: 2rem;
+  /* ============ HERO ============ */
+  .hero {
+    background-color: var(--color-surface-1);
+    padding: var(--space-3xl) var(--space-xl) var(--space-2xl);
   }
 
-  .page-subtitle {
+  .hero-inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+  }
+
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+    align-items: start;
+  }
+
+  .hero-eyebrow {
+    display: block;
+    font-family: var(--font-body);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--color-primary);
+    margin-bottom: var(--space-md);
+  }
+
+  .hero h1 {
+    font-family: var(--font-heading);
+    font-size: 3.5rem;
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    color: var(--color-text);
+  }
+
+  .hero-subtitle {
     color: var(--color-text-secondary);
-    margin-top: var(--space-sm);
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-top: var(--space-md);
     max-width: 36rem;
   }
 
-  /* Recent flights box */
-  .recent-box {
-    margin-top: var(--space-xl);
-    background-color: var(--color-surface-1);
-    border: 1px solid var(--color-border);
+  /* Pull-quote style for recent flights */
+  .hero-quote {
+    background-color: var(--color-surface-2);
+    border-left: 4px solid var(--color-primary);
     padding: var(--space-lg);
   }
 
   .recent-heading {
-    font-size: 1.125rem;
+    font-family: var(--font-body);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
     color: var(--color-primary);
+    margin-bottom: var(--space-xs);
+  }
+
+  .recent-date {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text);
     margin-bottom: var(--space-md);
   }
 
@@ -158,9 +220,60 @@ const rows = flights.map(f => ({
     font-variant-numeric: tabular-nums;
   }
 
+  @media (min-width: 768px) {
+    .hero {
+      padding: var(--space-4xl) var(--space-xl) var(--space-2xl);
+    }
+
+    .hero-grid {
+      grid-template-columns: 8fr 4fr;
+      gap: var(--space-2xl);
+    }
+
+    .hero h1 {
+      font-size: 4.5rem;
+    }
+  }
+
+  /* ============ TABLE SECTION ============ */
+  .table-section {
+    background-color: var(--color-bg);
+    padding: var(--space-2xl) var(--space-xl) var(--space-3xl);
+  }
+
+  .table-section-inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+  }
+
+  .panel-header {
+    margin-bottom: var(--space-xl);
+  }
+
+  .panel-eyebrow {
+    display: block;
+    font-family: var(--font-body);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--color-primary);
+    margin-bottom: var(--space-xs);
+  }
+
+  .panel-header h2 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin-bottom: var(--space-xs);
+  }
+
+  .panel-header p {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+  }
+
   /* Table */
   .table-wrap {
-    margin-top: var(--space-md);
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
@@ -179,16 +292,16 @@ const rows = flights.map(f => ({
   }
 
   th {
-    background-color: var(--color-surface-2);
+    background-color: var(--color-surface-4);
     color: var(--color-text-secondary);
     font-weight: 600;
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    padding: var(--space-sm) var(--space-md);
+    padding: var(--space-sm) var(--space-lg);
     text-align: left;
     white-space: nowrap;
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 2px solid var(--color-primary-muted);
     user-select: none;
   }
 
@@ -210,18 +323,18 @@ const rows = flights.map(f => ({
   }
 
   td {
-    padding: var(--space-sm) var(--space-md);
+    padding: var(--space-sm) var(--space-lg);
     border-bottom: 1px solid var(--color-border);
     white-space: nowrap;
   }
 
-  /* Zebra striping */
-  tbody tr:nth-child(even) {
+  /* Zebra striping with depth */
+  tbody tr:nth-child(odd) {
     background-color: var(--color-surface-1);
   }
 
-  tbody tr:nth-child(odd) {
-    background-color: var(--color-bg);
+  tbody tr:nth-child(even) {
+    background-color: var(--color-surface-2);
   }
 
   tbody tr.hidden {
@@ -238,10 +351,13 @@ const rows = flights.map(f => ({
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: var(--space-xs) var(--space-md);
-      padding: var(--space-md);
+      padding: var(--space-md) var(--space-lg);
       border-bottom: 1px solid var(--color-border);
-      background-color: var(--color-surface-1);
       margin-bottom: var(--space-sm);
+    }
+
+    tbody tr:nth-child(odd) {
+      background-color: var(--color-surface-1);
     }
 
     tbody tr:nth-child(even) {
@@ -269,12 +385,6 @@ const rows = flights.map(f => ({
       grid-column: 1 / -1;
       font-weight: 600;
       color: var(--color-primary);
-    }
-  }
-
-  @media (min-width: 768px) {
-    h1 {
-      font-size: 2.75rem;
     }
   }
 </style>

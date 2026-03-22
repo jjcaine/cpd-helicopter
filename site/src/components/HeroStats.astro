@@ -18,72 +18,88 @@ const annualLow = Math.round((costEstimateLow / totalDays) * 365 / 1000);
 const annualHigh = Math.round((costEstimateHigh / totalDays) * 365 / 1000);
 ---
 
-<div class="hero-stats">
+<div class="stat-stack">
   <div class="stat-card">
+    <span class="stat-category">Refurbishment cost</span>
     <span class="stat-number">$3.5M</span>
-    <span class="stat-label">taxpayer money to refurbish two helicopters</span>
+    <span class="stat-desc">taxpayer money for two helicopters</span>
   </div>
   <div class="stat-card">
+    <span class="stat-category">Total flights</span>
     <span class="stat-number">{formatNumber(totalFlights)}</span>
-    <span class="stat-label">flights in the last {totalDays} days</span>
+    <span class="stat-desc">in the last {totalDays} days</span>
   </div>
   <div class="stat-card">
+    <span class="stat-category">Night flights</span>
     <span class="stat-number">{pctAfter7pm}%</span>
-    <span class="stat-label">of flights happen after 7 PM</span>
+    <span class="stat-desc">of flights happen after 7 PM</span>
   </div>
   <div class="stat-card">
+    <span class="stat-category">Noise level</span>
     <span class="stat-number">~82 dB</span>
-    <span class="stat-label">noise at ground level</span>
-    <span class="stat-cite"><a href="/research/#health">The WHO says 40 dB is the safe limit for nighttime →</a></span>
+    <span class="stat-desc">at ground level</span>
+    <span class="stat-cite"><a href="/research/#health">WHO safe limit is 40 dB &rarr;</a></span>
+  </div>
+  <div class="stat-card stat-card--muted">
+    <span class="stat-category">Annual operating cost</span>
+    <span class="stat-number stat-number--sm">${annualLow}K–${annualHigh}K</span>
+    <span class="stat-desc">estimated per year in fuel, maintenance, and crew — based on {formatNumber(totalHours)} flight hours at $200–$400/hr</span>
   </div>
 </div>
-<p class="cost-context">
-  On top of the $3.5M refurbishment, operating costs run an estimated
-  <strong>${annualLow}K–${annualHigh}K per year</strong> in fuel, maintenance,
-  and crew — based on {formatNumber(totalHours)} flight hours tracked over {totalDays} days
-  at industry rates of $200–$400/hour.
-</p>
 
 <style>
-  .hero-stats {
-    display: grid;
-    grid-template-columns: 1fr;
+  .stat-stack {
+    display: flex;
+    flex-direction: column;
     gap: var(--space-md);
-    padding: var(--space-xl) 0;
   }
 
   .stat-card {
-    background-color: var(--color-surface-1);
-    border: 1px solid var(--color-border);
-    padding: var(--space-lg);
+    background-color: var(--color-surface-4);
+    padding: var(--space-xl);
     display: flex;
     flex-direction: column;
     gap: var(--space-xs);
   }
 
+  .stat-category {
+    font-family: var(--font-body);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-text-muted);
+  }
+
   .stat-number {
     font-family: var(--font-heading);
-    font-size: 2.5rem;
+    font-size: 3rem;
     font-weight: 700;
     line-height: 1;
     color: var(--color-primary);
   }
 
-  .stat-label {
+  .stat-number--sm {
+    font-size: 2rem;
+  }
+
+  .stat-desc {
     font-family: var(--font-body);
-    font-size: 0.875rem;
-    font-weight: 500;
+    font-size: 1.125rem;
+    font-weight: 400;
     color: var(--color-text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    line-height: 1.4;
+  }
+
+  .stat-card--muted .stat-desc {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
   }
 
   .stat-cite {
     font-size: 0.75rem;
     font-style: italic;
-    text-transform: none;
-    letter-spacing: 0;
-    margin-top: 0.25rem;
+    margin-top: var(--space-xs);
   }
 
   .stat-cite a {
@@ -94,32 +110,5 @@ const annualHigh = Math.round((costEstimateHigh / totalDays) * 365 / 1000);
   .stat-cite a:hover {
     color: var(--color-primary);
     text-decoration: underline;
-  }
-
-  .cost-context {
-    font-size: 0.875rem;
-    color: var(--color-text-muted);
-    line-height: 1.6;
-    max-width: 48rem;
-  }
-
-  .cost-context strong {
-    color: var(--color-text-secondary);
-  }
-
-  @media (min-width: 640px) {
-    .hero-stats {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .hero-stats {
-      grid-template-columns: repeat(4, 1fr);
-    }
-
-    .stat-number {
-      font-size: 3rem;
-    }
   }
 </style>

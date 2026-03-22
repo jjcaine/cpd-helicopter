@@ -3,37 +3,52 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
 <BaseLayout title="Take Action" description="How to help reduce police helicopter noise in Cleveland. File complaints, contact your council member, get involved.">
-  <section class="section">
-    <div class="container">
-      <h1>Take Action</h1>
-      <p class="page-subtitle">
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <div class="hero-inner">
+      <span class="hero-eyebrow">Take Action</span>
+      <h1>Make it stop.</h1>
+      <p class="hero-subtitle">
         The data is clear. Cleveland's police helicopters fly too often, cost too much,
         and don't make us safer. Here's what you can do.
       </p>
+    </div>
+  </section>
 
-      <div class="action-grid">
-        <div class="action-card">
-          <h3>Call 311</h3>
-          <p>
-            Call <strong>311</strong> (or 216-664-2000) every time the helicopter wakes you up or
-            disrupts your evening. Cleveland's 311 system doesn't have a "helicopter noise" category —
-            there's no good fit. Use <strong>"Street Issues"</strong> or describe it as a noise
-            disturbance. The point isn't the category — it's creating a paper trail. Every call gets
-            logged. If enough people call, the numbers show up in the city's open data portal and
-            someone has to answer for it.
-          </p>
-          <p class="action-detail">
-            You can also file online at <a href="https://www.clevelandohio.gov/311" target="_blank" rel="noopener">clevelandohio.gov/311</a>,
-            but calling is faster and harder to ignore.
-          </p>
-          <p class="action-tip">
-            <strong>What to say:</strong> "I'd like to report a noise disturbance from a Cleveland Police
-            helicopter circling my neighborhood at [time]. This happens regularly and is disrupting
-            sleep in my household."
-          </p>
+  <!-- ============ FEATURED ACTION: CALL 311 ============ -->
+  <section class="actions">
+    <div class="actions-inner">
+      <div class="actions-grid">
+        <!-- PRIMARY CARD: Call 311 -->
+        <div class="action-card action-card--primary">
+          <div class="action-card-accent"></div>
+          <div class="action-card-body">
+            <span class="card-eyebrow">Step 1</span>
+            <h2>Call 311</h2>
+            <p>
+              Call <strong>311</strong> (or 216-664-2000) every time the helicopter wakes you up or
+              disrupts your evening. Cleveland's 311 system doesn't have a "helicopter noise" category —
+              there's no good fit. Use <strong>"Street Issues"</strong> or describe it as a noise
+              disturbance. The point isn't the category — it's creating a paper trail. Every call gets
+              logged. If enough people call, the numbers show up in the city's open data portal and
+              someone has to answer for it.
+            </p>
+            <p class="action-detail">
+              You can also file online at <a href="https://www.clevelandohio.gov/311" target="_blank" rel="noopener">clevelandohio.gov/311</a>,
+              but calling is faster and harder to ignore.
+            </p>
+            <div class="action-tip">
+              <strong>What to say:</strong> "I'd like to report a noise disturbance from a Cleveland Police
+              helicopter circling my neighborhood at [time]. This happens regularly and is disrupting
+              sleep in my household."
+            </div>
+            <a href="tel:+12166642000" class="cta-button">Call 216-664-2000 now &rarr;</a>
+          </div>
         </div>
 
-        <div class="action-card">
+        <!-- SECONDARY CARDS ROW -->
+        <div class="action-card action-card--secondary">
+          <span class="card-eyebrow">Step 2</span>
           <h3>Contact your council member</h3>
           <p>
             City council controls the police budget. Your council member needs to hear from you
@@ -47,7 +62,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           </p>
         </div>
 
-        <div class="action-card">
+        <div class="action-card action-card--secondary">
+          <span class="card-eyebrow">Step 3</span>
           <h3>Share the data</h3>
           <p>
             Send this site to your neighbors, your neighborhood association, your neighborhood
@@ -56,7 +72,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           </p>
         </div>
 
-        <div class="action-card">
+        <div class="action-card action-card--secondary">
+          <span class="card-eyebrow">Step 4</span>
           <h3>Get involved</h3>
           <p>
             Want to help build this campaign? We need neighbors who are tired of the noise,
@@ -70,72 +87,233 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 </BaseLayout>
 
 <style>
-  h1 {
-    font-size: 2rem;
+  /* ============ HERO ============ */
+  .hero {
+    background-color: var(--color-surface-1);
+    padding: var(--space-3xl) var(--space-xl) var(--space-2xl);
   }
 
-  .page-subtitle {
+  .hero-inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+  }
+
+  .hero-eyebrow {
+    display: block;
+    font-family: var(--font-body);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--color-primary);
+    margin-bottom: var(--space-md);
+  }
+
+  .hero h1 {
+    font-family: var(--font-heading);
+    font-size: 3.5rem;
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    color: var(--color-text);
+  }
+
+  .hero-subtitle {
     color: var(--color-text-secondary);
-    margin-top: var(--space-sm);
+    font-size: 1.125rem;
+    line-height: 1.6;
+    margin-top: var(--space-lg);
     max-width: 36rem;
   }
 
-  .action-grid {
+  @media (min-width: 768px) {
+    .hero {
+      padding: var(--space-4xl) var(--space-xl) var(--space-2xl);
+    }
+
+    .hero h1 {
+      font-size: 4.5rem;
+    }
+  }
+
+  /* ============ ACTIONS ============ */
+  .actions {
+    background-color: var(--color-bg);
+    padding: var(--space-2xl) var(--space-xl) var(--space-3xl);
+  }
+
+  .actions-inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+  }
+
+  .actions-grid {
     display: grid;
     grid-template-columns: 1fr;
+    gap: var(--space-xl);
+  }
+
+  /* ---- Primary card (Call 311) ---- */
+  .action-card--primary {
+    position: relative;
+    background-color: var(--color-surface-4);
+    overflow: hidden;
+  }
+
+  .action-card-accent {
+    height: 4px;
+    background: linear-gradient(45deg, #f59e0b 0%, #b97500 100%);
+  }
+
+  .action-card-body {
+    padding: var(--space-xl);
+    display: flex;
+    flex-direction: column;
     gap: var(--space-md);
-    margin-top: var(--space-2xl);
   }
 
-  .action-card {
-    background-color: var(--color-surface-1);
-    border: 1px solid var(--color-border);
-    padding: var(--space-lg);
-  }
-
-  .action-card h3 {
+  .action-card--primary h2 {
     font-family: var(--font-heading);
-    color: var(--color-primary);
-    margin-bottom: var(--space-sm);
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--color-text);
   }
 
-  .action-card p {
+  .action-card--primary p {
+    color: var(--color-text-secondary);
+    font-size: 1rem;
+    line-height: 1.7;
+  }
+
+  .action-card--primary p strong {
+    color: var(--color-text);
+  }
+
+  /* ---- Secondary cards ---- */
+  .action-card--secondary {
+    background-color: var(--color-surface-4);
+    padding: var(--space-xl);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .action-card--secondary h3 {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .action-card--secondary p {
     color: var(--color-text-secondary);
     font-size: 0.9375rem;
     line-height: 1.6;
   }
 
-  .action-card a {
+  .action-card--secondary p strong {
+    color: var(--color-text);
+  }
+
+  /* ---- Shared card elements ---- */
+  .card-eyebrow {
+    display: block;
+    font-family: var(--font-body);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--color-primary);
+  }
+
+  .action-detail {
+    font-size: 0.875rem !important;
+  }
+
+  .action-tip {
+    background-color: var(--color-surface-2);
+    border-left: 4px solid var(--color-primary);
+    padding: var(--space-lg);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+  }
+
+  .action-tip strong {
+    color: var(--color-text);
+  }
+
+  /* ---- Links ---- */
+  .actions a:not(.cta-button) {
     color: var(--color-primary);
     text-decoration: none;
   }
 
-  .action-card a:hover {
+  .actions a:not(.cta-button):hover {
     text-decoration: underline;
   }
 
-  .action-detail {
+  /* ---- CTA Button ---- */
+  .cta-button {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(45deg, #f59e0b 0%, #b97500 100%);
+    color: #0c0e10;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: opacity 0.15s ease;
+    align-self: flex-start;
     margin-top: var(--space-sm);
-    font-size: 0.875rem;
   }
 
-  .action-tip {
-    margin-top: var(--space-md);
-    padding: var(--space-md);
-    background-color: var(--color-surface-2);
-    border-left: 3px solid var(--color-primary);
-    font-size: 0.875rem;
+  .cta-button:hover {
+    opacity: 0.9;
+    color: #0c0e10;
   }
 
-  @media (min-width: 640px) {
-    .action-grid {
-      grid-template-columns: repeat(2, 1fr);
+  /* ---- Responsive: secondary cards in a row ---- */
+  @media (min-width: 768px) {
+    .actions-grid {
+      grid-template-columns: repeat(12, 1fr);
+      gap: var(--space-xl);
+    }
+
+    .action-card--primary {
+      grid-column: 1 / span 8;
+    }
+
+    .action-card--secondary:nth-child(2) {
+      grid-column: 9 / span 4;
+    }
+
+    .action-card--secondary:nth-child(3) {
+      grid-column: 1 / span 6;
+    }
+
+    .action-card--secondary:nth-child(4) {
+      grid-column: 7 / span 6;
     }
   }
 
-  @media (min-width: 768px) {
-    h1 {
-      font-size: 2.75rem;
+  @media (min-width: 1024px) {
+    .action-card--primary {
+      grid-column: 1 / span 8;
+    }
+
+    .action-card--secondary:nth-child(2) {
+      grid-column: 9 / span 4;
+    }
+
+    .action-card--secondary:nth-child(3) {
+      grid-column: 1 / span 4;
+    }
+
+    .action-card--secondary:nth-child(4) {
+      grid-column: 5 / span 4;
     }
   }
 </style>
