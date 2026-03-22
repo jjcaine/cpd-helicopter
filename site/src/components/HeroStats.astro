@@ -14,32 +14,35 @@ function formatNumber(n: number): string {
   return n.toLocaleString('en-US');
 }
 
-function formatCost(low: number, high: number): string {
-  if (low === 0 && high === 0) return '$0';
-  const fmtLow = '$' + Math.round(low / 1000) + 'K';
-  const fmtHigh = '$' + Math.round(high / 1000) + 'K';
-  return `${fmtLow}\u2013${fmtHigh}`;
-}
+// Annualize: tracked hours / tracked days * 365
+const annualLow = Math.round((costEstimateLow / totalDays) * 365 / 1000);
+const annualHigh = Math.round((costEstimateHigh / totalDays) * 365 / 1000);
 ---
 
 <div class="hero-stats">
   <div class="stat-card">
+    <span class="stat-number">$3.5M</span>
+    <span class="stat-label">taxpayer money to refurbish two helicopters</span>
+  </div>
+  <div class="stat-card">
     <span class="stat-number">{formatNumber(totalHours)}</span>
-    <span class="stat-label">hours of helicopter noise</span>
+    <span class="stat-label">hours of helicopter noise since Aug 2025</span>
   </div>
   <div class="stat-card">
     <span class="stat-number">{formatNumber(nightsPast9pm)}</span>
     <span class="stat-label">nights flying past 9 PM</span>
   </div>
   <div class="stat-card">
-    <span class="stat-number">{formatCost(costEstimateLow, costEstimateHigh)}</span>
-    <span class="stat-label">estimated taxpayer cost</span>
-  </div>
-  <div class="stat-card">
     <span class="stat-number">{pctDaysWithFlights}%</span>
     <span class="stat-label">of the last {totalDays} days had flights</span>
   </div>
 </div>
+<p class="cost-context">
+  On top of the $3.5M refurbishment, operating costs run an estimated
+  <strong>${annualLow}K–${annualHigh}K per year</strong> in fuel, maintenance,
+  and crew — based on {formatNumber(totalHours)} flight hours tracked over {totalDays} days
+  at industry rates of $200–$400/hour.
+</p>
 
 <style>
   .hero-stats {
@@ -73,6 +76,17 @@ function formatCost(low: number, high: number): string {
     color: var(--color-text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
+  }
+
+  .cost-context {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    line-height: 1.6;
+    max-width: 48rem;
+  }
+
+  .cost-context strong {
+    color: var(--color-text-secondary);
   }
 
   @media (min-width: 640px) {

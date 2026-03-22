@@ -117,9 +117,9 @@ Curated citations organized by pillar with plain-language summaries. Not an acad
 
 ## Open Questions
 
-- [ ] What is Cleveland's noise complaint mechanism? 311? Something else?
+- [x] What is Cleveland's noise complaint mechanism? Call 311 (216-664-2000). No helicopter/noise category exists — use "Street Issues" or describe as noise disturbance.
 - [ ] What is the concrete "ask" to city council? (Drone replacement has its own issues — TBD)
-- [ ] Should we file public records requests for CPD aviation unit budget, flight logs, mission reports?
+- [ ] File a public records request for CPD aviation unit's annual operating budget — fuel, maintenance, crew salaries, insurance, hangar fees at Burke Lakefront. Current cost estimates ($167K–$334K/year) are based on industry rates ($200–$400/hour), not actual Cleveland numbers. Getting the real budget would either confirm or sharpen the cost argument.
 - [ ] Are there neighborhood associations or advocacy orgs already working on this?
-- [ ] Noise measurements — can we get actual dB readings for the helicopters at various altitudes?
-- [ ] What does the flight path heat map actually show? Need to generate it to see which neighborhoods bear the heaviest burden.
+- [x] Noise measurements — MD 500E at median patrol altitude of 725 ft AGL produces ~82-84 dBA at ground level. At 500 ft (25% of flight time), ~87 dBA. WHO nighttime limit is 40 dB.
+- [x] Flight path heat map built — 870 H3 hex cells showing patrol concentration across Cleveland neighborhoods.
