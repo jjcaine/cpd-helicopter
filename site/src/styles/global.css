@@ -217,3 +217,10 @@ ul, ol {
 /* md: 768px  */
 /* lg: 1024px */
 /* xl: 1280px */
+
+/* Mobile: tighten large type and ensure enough breathing room */
+@media (max-width: 639px) {
+  h1 {
+    font-size: 2rem;
+  }
+}
