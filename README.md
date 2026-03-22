@@ -1,6 +1,6 @@
 # CPD Helicopter Flight Tracker
 
-Track CPD helicopter flights using ADS-B Exchange data, storing results in a PostgreSQL database with automatic daily syncing via GitHub Actions.
+Track Cleveland Police Department helicopter flights using ADS-B Exchange data, storing results in a PostgreSQL database with automatic daily syncing via GitHub Actions.
 
 ## Features
 
@@ -16,10 +16,12 @@ Track CPD helicopter flights using ADS-B Exchange data, storing results in a Pos
 
 ## Tracked Aircraft
 
+Cleveland Police Department operates multiple helicopters that rotate — they do not typically fly simultaneously. Gaps in one aircraft's data are normal and expected.
+
 | ICAO | Registration | Description |
 |------|--------------|-------------|
-| ad389e | - | CPD Helicopter 1 |
-| ad3c55 | N952CP | CPD Helicopter 2 |
+| ad389e | N951CP | CPD Helicopter |
+| ad3c55 | N952CP | CPD Helicopter |
 
 ## Installation
 
@@ -249,14 +251,23 @@ cpd-helicopter/
 ├── .github/workflows/
 │   ├── backfill-telemetry.yml  # Manual telemetry backfill workflow
 │   ├── daily-sync.yml          # Daily auto-backfill sync
+│   ├── export-notebooks.yml    # Auto-convert marimo notebooks to ipynb
 │   └── test.yml                # PR test runner
 ├── src/
 │   ├── __init__.py
-│   ├── config.py           # Configuration
+│   ├── config.py           # Configuration & tracked aircraft
 │   ├── database.py         # Database connection & UPSERT logic
 │   ├── main.py             # CLI entry point
 │   ├── models.py           # SQLAlchemy models
 │   └── scraper.py          # ADS-B Exchange scraping
+├── scripts/
+│   └── export_data.py      # Parquet data export for public access
+├── notebooks/
+│   ├── flight_analysis.py  # marimo notebook (interactive analysis)
+│   └── flight_analysis.ipynb  # Auto-exported Jupyter version
+├── data/
+│   ├── flights.parquet     # Exported flight metadata
+│   └── telemetry.parquet   # Exported telemetry points
 ├── tests/
 │   ├── test_database.py    # Database tests
 │   ├── test_main.py        # CLI tests
@@ -266,6 +277,42 @@ cpd-helicopter/
 ├── uv.lock                 # Dependency lockfile
 └── .env.example            # Environment template
 ```
+
+## Architecture
+
+### Data Flow
+
+```
+ADS-B Exchange → Playwright scraper → PostgreSQL (DigitalOcean) → Parquet export → Git repo
+```
+
+- **Source of truth:** PostgreSQL database hosted on DigitalOcean (managed, requires SSL)
+- **Public access layer:** Parquet files (`data/`) committed to the repo by the daily sync bot
+- **Analysis:** marimo notebook reads from DB (with credentials) or Parquet files (without)
+
+### Daily Sync Cycle
+
+The `daily-sync.yml` workflow runs at 6 AM UTC every day:
+
+1. Runs `--auto-backfill` which checks the last ingested date per aircraft and fetches any missing days through yesterday
+2. Exports the full database to `data/flights.parquet` and `data/telemetry.parquet`
+3. Commits and pushes the updated Parquet files
+
+Because the GitHub Actions bot pushes commits daily, your local repo will drift behind the remote. Pull regularly to get fresh Parquet data.
+
+## Troubleshooting
+
+### Workflow is green but no new flights
+
+This is normal — it means the aircraft didn't fly on those dates. CPD rotates between helicopters and doesn't fly every day. The scraper correctly reports "No flights found" and the workflow succeeds. Check ADS-B Exchange directly to verify.
+
+### One aircraft shows no data for extended periods
+
+CPD helicopters rotate. It's common for one aircraft (e.g., ad3c55) to go quiet for weeks while the other (ad389e) is active. This is not a scraper bug.
+
+### Local Parquet files seem stale
+
+The daily sync bot pushes "Update data export" commits. Run `git pull` to get the latest data. The database always has the most current data.
 
 ## How It Works
 
