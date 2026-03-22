@@ -8,32 +8,43 @@
 @import '@fontsource/inter/700.css';
 
 /* ============================================
-   Design Tokens
+   Design Tokens — Light Theme (default)
    ============================================ */
 :root {
   /* Background & surface levels */
-  --color-bg: #121416;
-  --color-surface-1: #1a1c1e;
-  --color-surface-2: #1e2022;
-  --color-surface-3: #282a2c;
-  --color-surface-4: #333537;
+  --color-bg: #fafaf8;
+  --color-surface-1: #f0f0ec;
+  --color-surface-2: #e8e8e2;
+  --color-surface-3: #ddddd7;
+  --color-surface-4: #d2d2cc;
 
-  /* Primary accent */
-  --color-primary: #f59e0b;
-  --color-primary-hover: #fbbf24;
-  --color-primary-muted: rgba(245, 158, 11, 0.15);
+  /* Primary accent — muted amber, WCAG AA on white */
+  --color-primary: #8b6914;
+  --color-primary-hover: #a67c00;
+  --color-primary-muted: rgba(139, 105, 20, 0.1);
 
   /* Text */
-  --color-text: #e2e2e5;
-  --color-text-secondary: #9ca3af;
-  --color-text-muted: #6b7280;
+  --color-text: #1a1a1a;
+  --color-text-secondary: #4b4b4b;
+  --color-text-muted: #7a7a7a;
 
   /* Borders */
-  --color-border: #333537;
+  --color-border: #d8d8d2;
 
   /* Semantic */
-  --color-danger: #f87171;
-  --color-success: #34d399;
+  --color-danger: #c53030;
+  --color-success: #1e7e3e;
+
+  /* Chart-specific */
+  --color-chart-text: #4b4b4b;
+  --color-chart-label: #7a7a7a;
+  --color-chart-grid: rgba(0, 0, 0, 0.08);
+  --color-calendar-empty: #e8e8e2;
+  --color-tooltip-bg: #ffffff;
+  --color-tooltip-border: #d8d8d2;
+  --color-tooltip-text: #1a1a1a;
+  --color-sleep-overlay: rgba(200, 50, 50, 0.06);
+  --color-sleep-label: rgba(200, 50, 50, 0.5);
 
   /* Typography */
   --font-heading: 'Newsreader', Georgia, 'Times New Roman', serif;
@@ -49,12 +60,46 @@
   --space-3xl: 4rem;
   --space-4xl: 6rem;
 
-  /* Border radius: 0 everywhere */
+  /* Border radius */
   --radius: 0px;
 
   /* Layout */
   --max-width: 72rem;
   --nav-height: 4.5rem;
+}
+
+/* ============================================
+   Dark Theme
+   ============================================ */
+[data-theme="dark"] {
+  --color-bg: #121416;
+  --color-surface-1: #1a1c1e;
+  --color-surface-2: #1e2022;
+  --color-surface-3: #282a2c;
+  --color-surface-4: #333537;
+
+  --color-primary: #d4a017;
+  --color-primary-hover: #e0b030;
+  --color-primary-muted: rgba(212, 160, 23, 0.15);
+
+  --color-text: #e2e2e5;
+  --color-text-secondary: #9ca3af;
+  --color-text-muted: #6b7280;
+
+  --color-border: #333537;
+
+  --color-danger: #f87171;
+  --color-success: #34d399;
+
+  --color-chart-text: #e2e2e5;
+  --color-chart-label: #9ca3af;
+  --color-chart-grid: rgba(255, 255, 255, 0.08);
+  --color-calendar-empty: #1a1c2e;
+  --color-tooltip-bg: #1a1c1e;
+  --color-tooltip-border: #444;
+  --color-tooltip-text: #e2e2e5;
+  --color-sleep-overlay: rgba(248, 113, 113, 0.07);
+  --color-sleep-label: rgba(248, 113, 113, 0.5);
 }
 
 /* ============================================
@@ -172,10 +217,3 @@ ul, ol {
 /* md: 768px  */
 /* lg: 1024px */
 /* xl: 1280px */
-
-/* Example usage:
-   @media (min-width: 640px)  { ... }
-   @media (min-width: 768px)  { ... }
-   @media (min-width: 1024px) { ... }
-   @media (min-width: 1280px) { ... }
-*/

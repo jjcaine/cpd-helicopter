@@ -19,11 +19,26 @@ function formatHourLong(hour: number): string {
   return `${hour - 12} PM`;
 }
 
+function getThemeColors() {
+  const s = getComputedStyle(document.documentElement);
+  return {
+    text: s.getPropertyValue("--color-chart-text").trim(),
+    primary: s.getPropertyValue("--color-primary").trim(),
+    sleepOverlay: s.getPropertyValue("--color-sleep-overlay").trim(),
+    sleepLabel: s.getPropertyValue("--color-sleep-label").trim(),
+    tooltipBg: s.getPropertyValue("--color-tooltip-bg").trim(),
+    tooltipBorder: s.getPropertyValue("--color-tooltip-border").trim(),
+    tooltipText: s.getPropertyValue("--color-tooltip-text").trim(),
+  };
+}
+
 export function renderHistogramChart(
   container: HTMLElement,
   data: HistogramEntry[]
 ): void {
   container.innerHTML = "";
+
+  const colors = getThemeColors();
 
   const maxFlights = Math.max(...data.map((d) => d.flights));
   const yMax = Math.ceil(maxFlights * 1.12);
@@ -40,7 +55,7 @@ export function renderHistogramChart(
     marginRight: 16,
     style: {
       background: "transparent",
-      color: "#e2e2e5",
+      color: colors.text,
       fontSize: "12px",
     },
     x: {
@@ -60,7 +75,7 @@ export function renderHistogramChart(
         x: "hour",
         y1: 0,
         y2: yMax,
-        fill: "rgba(248, 113, 113, 0.07)",
+        fill: colors.sleepOverlay,
         insetLeft: -6,
         insetRight: -6,
       }),
@@ -68,7 +83,7 @@ export function renderHistogramChart(
         x: "hour",
         y1: 0,
         y2: yMax,
-        fill: "rgba(248, 113, 113, 0.07)",
+        fill: colors.sleepOverlay,
         insetLeft: -6,
         insetRight: -6,
       }),
@@ -76,7 +91,7 @@ export function renderHistogramChart(
         x: "hour",
         y: "y",
         text: ["Sleep hours"],
-        fill: "rgba(248, 113, 113, 0.5)",
+        fill: colors.sleepLabel,
         fontSize: 10,
         fontStyle: "italic",
       }),
@@ -84,14 +99,14 @@ export function renderHistogramChart(
         x: "hour",
         y: "y",
         text: ["Sleep hours"],
-        fill: "rgba(248, 113, 113, 0.5)",
+        fill: colors.sleepLabel,
         fontSize: 10,
         fontStyle: "italic",
       }),
       Plot.barY(data, {
         x: "hour",
         y: "flights",
-        fill: "#f59e0b",
+        fill: colors.primary,
         rx: 2,
       }),
       Plot.ruleY([0]),
@@ -105,14 +120,16 @@ export function renderHistogramChart(
   Object.assign(tooltip.style, {
     position: "fixed",
     pointerEvents: "none",
-    background: "#1a1c1e",
-    border: "1px solid #444",
+    background: colors.tooltipBg,
+    border: `1px solid ${colors.tooltipBorder}`,
     padding: "6px 10px",
     fontSize: "12px",
-    color: "#e2e2e5",
+    color: colors.tooltipText,
     display: "none",
     zIndex: "9999",
     fontFamily: "Inter, sans-serif",
+    borderRadius: "4px",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
   });
   document.body.appendChild(tooltip);
 

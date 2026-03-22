@@ -163,6 +163,15 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       </div>
     </div>
   </section>
+
+  <!-- ============ CTA ============ -->
+  <section class="cta-section">
+    <div class="cta-inner">
+      <h2>Now that you know, do something about it.</h2>
+      <p>Call 311, contact your council member, and share the data with your neighbors.</p>
+      <a href="/action/" class="cta-button">Take action &rarr;</a>
+    </div>
+  </section>
 </BaseLayout>
 
 <style>
@@ -325,5 +334,56 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
   .citation a:hover {
     text-decoration: underline;
+  }
+
+  /* ============ CTA SECTION ============ */
+  .cta-section {
+    background-color: var(--color-surface-1);
+    padding: var(--space-3xl) var(--space-xl);
+    text-align: center;
+  }
+
+  .cta-inner {
+    max-width: 36rem;
+    margin: 0 auto;
+  }
+
+  .cta-inner h2 {
+    font-family: var(--font-heading);
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin-bottom: var(--space-md);
+  }
+
+  .cta-inner p {
+    color: var(--color-text-secondary);
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: var(--space-lg);
+  }
+
+  .cta-button {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background-color: var(--color-primary);
+    color: #fff;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: opacity 0.15s ease;
+  }
+
+  .cta-button:hover {
+    opacity: 0.9;
+    color: #fff;
+  }
+
+  @media (min-width: 768px) {
+    .cta-inner h2 {
+      font-size: 2rem;
+    }
   }
 </style>

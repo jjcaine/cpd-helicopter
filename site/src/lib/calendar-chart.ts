@@ -7,11 +7,26 @@ interface CalendarEntry {
   flights: number;
 }
 
+function getThemeColors() {
+  const s = getComputedStyle(document.documentElement);
+  return {
+    text: s.getPropertyValue("--color-chart-text").trim(),
+    label: s.getPropertyValue("--color-chart-label").trim(),
+    primary: s.getPropertyValue("--color-primary").trim(),
+    empty: s.getPropertyValue("--color-calendar-empty").trim(),
+    tooltipBg: s.getPropertyValue("--color-tooltip-bg").trim(),
+    tooltipBorder: s.getPropertyValue("--color-tooltip-border").trim(),
+    tooltipText: s.getPropertyValue("--color-tooltip-text").trim(),
+  };
+}
+
 export function renderCalendarChart(
   container: HTMLElement,
   data: CalendarEntry[]
 ): void {
   container.innerHTML = "";
+
+  const colors = getThemeColors();
 
   const dataMap = new Map(data.map((d) => [d.date, d]));
 
@@ -65,7 +80,7 @@ export function renderCalendarChart(
     marginRight: 8,
     style: {
       background: "transparent",
-      color: "#e2e2e5",
+      color: colors.text,
       fontSize: "11px",
     },
     x: {
@@ -87,7 +102,7 @@ export function renderCalendarChart(
     color: {
       type: "linear",
       domain: [0, maxHours],
-      range: ["#1a1c2e", "#f59e0b"],
+      range: [colors.empty, colors.primary],
       label: "Hours",
     },
     marks: [
@@ -95,7 +110,7 @@ export function renderCalendarChart(
         x: (d: { weekIndex: number }) => d.weekIndex,
         y: -1,
         text: (d: { label: string }) => d.label,
-        fill: "#9ca3af",
+        fill: colors.label,
         fontSize: 10,
         dy: -4,
         textAnchor: "start",
@@ -117,16 +132,18 @@ export function renderCalendarChart(
   Object.assign(tooltip.style, {
     position: "fixed",
     pointerEvents: "none",
-    background: "#1a1c1e",
-    border: "1px solid #444",
+    background: colors.tooltipBg,
+    border: `1px solid ${colors.tooltipBorder}`,
     padding: "6px 10px",
     fontSize: "12px",
-    color: "#e2e2e5",
+    color: colors.tooltipText,
     display: "none",
     zIndex: "9999",
     fontFamily: "Inter, sans-serif",
     lineHeight: "1.5",
     whiteSpace: "pre",
+    borderRadius: "4px",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
   });
   document.body.appendChild(tooltip);
 
