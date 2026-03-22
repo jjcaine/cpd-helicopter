@@ -139,6 +139,6 @@
   "stitch_mcp": {
     "v1_project_id": "17161178152752849342",
     "v2_project_id": "16847667462324667654",
-    "note": "Stitch MCP server provides access to designer mockups. v1 is dark theme (used for current site). v2 is light editorial theme (for redesign). Add server with: claude mcp add stitch --transport http --url 'https://stitch.googleapis.com/mcp' --header 'X-Goog-Api-Key: AQ.Ab8RN6IYebHM8_WBf85YMCHgR0J97Q-cePO0qY9dRkR4IsmuZw'"
+    "note": "Stitch MCP server provides access to designer mockups. v1 is dark theme (used for current site). v2 is light editorial theme (for redesign). API key must be provided separately — do NOT commit it. Check local MCP config or ask the project owner."
   }
 }
