@@ -39,7 +39,7 @@ $3.5M helicopter refurbishment + $100K+/year operating costs for helicopters tha
 - LAPD Helicopter Audit (LA City Controller, 2023): "No persuasive empirical evidence shows a clear link between helicopter patrols and crime reduction" — https://controller.lacity.gov/landings/lapd-helicopters
 - London Police study (Whitehead, 2000): helicopter patrols "did not reduce crime rates" — https://www.ojp.gov/ncjrs/virtual-library/abstracts/eye-sky-evaluation-police-helicopter-patrols-london-police-service
 - Swedish police (2019): "no significant effect in deterring crime"
-- News 5 Cleveland investigation: only one crime-related detail found in months of records; mostly special events — https://www.news5cleveland.com/news/local-news/we-follow-through/city-to-spend-3-5-million-to-refurbish-police-choppers-news-5-finds-they-rarely-fly-to-fight-crime (backup: https://signalcleveland.org/3-5-million-approved-for-cleveland-police-helicopters/)
+- News 5 Cleveland investigation (Oct 2023): only one crime-related detail found in months of records; mostly special events — https://www.news5cleveland.com/news/local-news/we-follow-through/city-to-spend-3-5-million-to-refurbish-police-choppers-news-5-finds-they-rarely-fly-to-fight-crime
 - Council Safety Chair Mike Polensek: "that's not crime prevention"
 
 **Cost references:**

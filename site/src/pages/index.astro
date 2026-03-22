@@ -1,0 +1,175 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import HeroStats from '../components/HeroStats.astro';
+import stats from '../data/stats.json';
+import histogram from '../data/histogram.json';
+
+const totalFlightHours = histogram.reduce((sum: number, d: {hour: number, flights: number}) => sum + d.flights, 0);
+const windDown = histogram.filter((d: {hour: number}) => d.hour >= 19 && d.hour <= 21).reduce((sum: number, d: {flights: number}) => sum + d.flights, 0);
+const sleepHours = histogram.filter((d: {hour: number}) => d.hour >= 22 || d.hour <= 4).reduce((sum: number, d: {flights: number}) => sum + d.flights, 0);
+const windDownPct = Math.round((windDown / totalFlightHours) * 100);
+const sleepPct = Math.round((sleepHours / totalFlightHours) * 100);
+---
+
+<BaseLayout>
+  <section class="hero section">
+    <div class="container">
+      <h1>Cleveland police helicopters fly over your neighborhood almost every night.</h1>
+      <p class="hero-subtitle">Here's the data.</p>
+
+      <HeroStats
+        totalHours={stats.total_hours}
+        nightsPast9pm={stats.nights_past_9pm}
+        costEstimateLow={stats.cost_estimate_low}
+        costEstimateHigh={stats.cost_estimate_high}
+        pctDaysWithFlights={stats.total_days > 0 ? Math.round((stats.days_with_flights / stats.total_days) * 100) : 0}
+        totalDays={stats.total_days}
+      />
+
+      {stats.date_start && stats.date_end && (
+        <p class="hero-date-range">
+          Based on {stats.total_flights} flights tracked from {stats.date_start} to {stats.date_end}.
+        </p>
+      )}
+    </div>
+  </section>
+
+  <section class="section" id="calendar">
+    <div class="container">
+      <h2>When they fly</h2>
+      <p>Every day, colored by hours of helicopter activity. The darker the square, the longer they flew.</p>
+      <div class="chart-container" id="calendar-chart"></div>
+    </div>
+  </section>
+
+  <section class="section" id="time-of-day">
+    <div class="container">
+      <h2>What time they fly</h2>
+      <p>Most flights happen in the evening and at night — not during the day.</p>
+      <div class="time-stats">
+        <div class="time-stat">
+          <span class="time-stat-number">{windDownPct}%</span>
+          <span class="time-stat-label">during wind-down hours <span class="time-stat-range">7 PM – 10 PM</span></span>
+        </div>
+        <div class="time-stat">
+          <span class="time-stat-number">{sleepPct}%</span>
+          <span class="time-stat-label">during sleeping hours <span class="time-stat-range">10 PM – 5 AM</span></span>
+        </div>
+        <div class="time-stat">
+          <span class="time-stat-number">{windDownPct + sleepPct}%</span>
+          <span class="time-stat-label">of all flights after 7 PM</span>
+        </div>
+      </div>
+      <div class="chart-container" id="histogram-chart"></div>
+    </div>
+  </section>
+
+  <section class="section" id="map">
+    <div class="container">
+      <h2>Where they fly</h2>
+      <p>Flight paths plotted on the map. See which neighborhoods get circled the most.</p>
+      <div class="chart-container chart-container--map" id="flight-map"></div>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import { renderCalendarChart } from '../lib/calendar-chart';
+  import calendarData from '../data/calendar.json';
+
+  const calendarEl = document.getElementById('calendar-chart');
+  if (calendarEl) renderCalendarChart(calendarEl, calendarData);
+</script>
+
+<script>
+  import { renderHistogramChart } from '../lib/histogram-chart';
+  import histogramData from '../data/histogram.json';
+
+  const histogramEl = document.getElementById('histogram-chart');
+  if (histogramEl) renderHistogramChart(histogramEl, histogramData);
+</script>
+
+<script>
+  import { renderFlightMap } from '../lib/flight-map';
+  import hexData from '../data/hex-map.json';
+
+  const mapEl = document.getElementById('flight-map');
+  if (mapEl) renderFlightMap(mapEl, hexData);
+</script>
+
+<style>
+  .hero h1 {
+    font-size: 2rem;
+    max-width: 40rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1.25rem;
+    color: var(--color-text-secondary);
+    margin-top: var(--space-sm);
+  }
+
+  .hero-date-range {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+  }
+
+  .time-stats {
+    display: flex;
+    gap: var(--space-lg);
+    margin-top: var(--space-lg);
+    flex-wrap: wrap;
+  }
+
+  .time-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .time-stat-number {
+    font-family: var(--font-heading);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    line-height: 1;
+  }
+
+  .time-stat-label {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+  }
+
+  .time-stat-range {
+    color: var(--color-text-muted);
+    font-size: 0.8125rem;
+  }
+
+  .chart-container {
+    margin-top: var(--space-lg);
+  }
+
+  .chart-container--map {
+    position: relative;
+    background-color: var(--color-bg);
+    height: 350px;
+  }
+
+  @media (min-width: 768px) {
+    .chart-container--map {
+      height: 500px;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .hero h1 {
+      font-size: 2.75rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .hero h1 {
+      font-size: 3.25rem;
+    }
+  }
+</style>

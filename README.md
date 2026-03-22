@@ -1,10 +1,10 @@
 # CPD Helicopter Flight Tracker
 
-Track Cleveland Police Department helicopter flights using ADS-B Exchange data, storing results in a PostgreSQL database with automatic daily syncing via GitHub Actions.
+Track Cleveland Police Department helicopter flights using public transponder data, storing results in a PostgreSQL database with automatic daily syncing via GitHub Actions.
 
 ## Features
 
-- Fetches historical flight trace data from ADS-B Exchange
+- Fetches historical flight trace data from public transponder sources
 - Captures detailed flight telemetry (position, altitude, speed, heading, etc.)
 - Stores flight data in PostgreSQL with automatic deduplication
 - UPSERT logic handles in-progress flights gracefully
@@ -91,7 +91,7 @@ python -m src.main --backfill-telemetry --icao ad389e
 python -m src.main --backfill-telemetry --start-date 2025-10-01 --end-date 2025-10-31
 ```
 
-Flights are grouped by aircraft and date to minimize ADS-B Exchange fetches. Fetched legs are matched to existing flights by start time (within a 60-second tolerance).
+Flights are grouped by aircraft and date to minimize network fetches. Fetched legs are matched to existing flights by start time (within a 60-second tolerance).
 
 ### Auto-Backfill Missed Days
 
@@ -259,7 +259,7 @@ cpd-helicopter/
 │   ├── database.py         # Database connection & UPSERT logic
 │   ├── main.py             # CLI entry point
 │   ├── models.py           # SQLAlchemy models
-│   └── scraper.py          # ADS-B Exchange scraping
+│   └── scraper.py          # Flight data scraping
 ├── scripts/
 │   └── export_data.py      # Parquet data export for public access
 ├── notebooks/
@@ -283,7 +283,7 @@ cpd-helicopter/
 ### Data Flow
 
 ```
-ADS-B Exchange → Playwright scraper → PostgreSQL (DigitalOcean) → Parquet export → Git repo
+Public transponder data → Playwright scraper → PostgreSQL (DigitalOcean) → Parquet export → Git repo
 ```
 
 - **Source of truth:** PostgreSQL database hosted on DigitalOcean (managed, requires SSL)
@@ -304,7 +304,7 @@ Because the GitHub Actions bot pushes commits daily, your local repo will drift 
 
 ### Workflow is green but no new flights
 
-This is normal — it means the aircraft didn't fly on those dates. CPD rotates between helicopters and doesn't fly every day. The scraper correctly reports "No flights found" and the workflow succeeds. Check ADS-B Exchange directly to verify.
+This is normal — it means the aircraft didn't fly on those dates. CPD rotates between helicopters and doesn't fly every day. The scraper correctly reports "No flights found" and the workflow succeeds.
 
 ### One aircraft shows no data for extended periods
 
@@ -316,7 +316,7 @@ The daily sync bot pushes "Update data export" commits. Run `git pull` to get th
 
 ## How It Works
 
-1. **Fetch Data:** Uses Playwright to load ADS-B Exchange with the `showTrace` parameter for historical data
+1. **Fetch Data:** Uses Playwright to load historical flight trace data
 2. **Parse Legs:** Analyzes trace data for 5+ minute gaps to identify separate flight legs
 3. **Capture Telemetry:** Extracts GPS coordinates, altitude, speed, heading, and other data points from each trace
 4. **Deduplicate:** Removes duplicates based on start time
@@ -330,15 +330,7 @@ All times are stored and displayed in **UTC**. A flight in Cleveland (EST/UTC-5)
 
 ## Data Availability
 
-- ADS-B Exchange retains historical data for a limited time
+- Historical transponder data is retained for a limited time
 - Recent data (last few days) is most reliable
 - Some dates may have no data if the aircraft didn't fly
 - The script gracefully handles dates with no available data
-
-## Finding ICAO Codes
-
-1. Visit [globe.adsbexchange.com](https://globe.adsbexchange.com/)
-2. Search for the aircraft by registration number
-3. The ICAO code is in the URL after `?icao=`
-
-Example: `https://globe.adsbexchange.com/?icao=ad3c55` → ICAO is `ad3c55`

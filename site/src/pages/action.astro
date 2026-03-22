@@ -1,0 +1,141 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Take Action" description="How to help reduce police helicopter noise in Cleveland. File complaints, contact your council member, get involved.">
+  <section class="section">
+    <div class="container">
+      <h1>Take Action</h1>
+      <p class="page-subtitle">
+        The data is clear. Cleveland's police helicopters fly too often, cost too much,
+        and don't make us safer. Here's what you can do.
+      </p>
+
+      <div class="action-grid">
+        <div class="action-card">
+          <h3>Call 311</h3>
+          <p>
+            Call <strong>311</strong> (or 216-664-2000) every time the helicopter wakes you up or
+            disrupts your evening. Cleveland's 311 system doesn't have a "helicopter noise" category —
+            there's no good fit. Use <strong>"Street Issues"</strong> or describe it as a noise
+            disturbance. The point isn't the category — it's creating a paper trail. Every call gets
+            logged. If enough people call, the numbers show up in the city's open data portal and
+            someone has to answer for it.
+          </p>
+          <p class="action-detail">
+            You can also file online at <a href="https://www.clevelandohio.gov/311" target="_blank" rel="noopener">clevelandohio.gov/311</a>,
+            but calling is faster and harder to ignore.
+          </p>
+          <p class="action-tip">
+            <strong>What to say:</strong> "I'd like to report a noise disturbance from a Cleveland Police
+            helicopter circling my neighborhood at [time]. This happens regularly and is disrupting
+            sleep in my household."
+          </p>
+        </div>
+
+        <div class="action-card">
+          <h3>Contact your council member</h3>
+          <p>
+            City council controls the police budget. Your council member needs to hear from you
+            directly — not just once, but every time this bothers you. Tell them you want to know
+            why the city spent $3.5 million refurbishing helicopters that fly over residential
+            neighborhoods almost every night.
+          </p>
+          <p class="action-detail">
+            Find your ward and council member at
+            <a href="https://clevelandcitycouncil.gov/" target="_blank" rel="noopener">clevelandcitycouncil.gov</a> (click "Find My Ward").
+          </p>
+        </div>
+
+        <div class="action-card">
+          <h3>Share the data</h3>
+          <p>
+            Send this site to your neighbors, your neighborhood association, your neighborhood
+            Facebook group, or a journalist. The more people who see the numbers, the harder
+            they are to ignore.
+          </p>
+        </div>
+
+        <div class="action-card">
+          <h3>Get involved</h3>
+          <p>
+            Want to help build this campaign? We need neighbors who are tired of the noise,
+            people who can show up at council meetings, and anyone willing to make calls.
+            This is a long fight and it takes numbers.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  h1 {
+    font-size: 2rem;
+  }
+
+  .page-subtitle {
+    color: var(--color-text-secondary);
+    margin-top: var(--space-sm);
+    max-width: 36rem;
+  }
+
+  .action-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+    margin-top: var(--space-2xl);
+  }
+
+  .action-card {
+    background-color: var(--color-surface-1);
+    border: 1px solid var(--color-border);
+    padding: var(--space-lg);
+  }
+
+  .action-card h3 {
+    font-family: var(--font-heading);
+    color: var(--color-primary);
+    margin-bottom: var(--space-sm);
+  }
+
+  .action-card p {
+    color: var(--color-text-secondary);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+  }
+
+  .action-card a {
+    color: var(--color-primary);
+    text-decoration: none;
+  }
+
+  .action-card a:hover {
+    text-decoration: underline;
+  }
+
+  .action-detail {
+    margin-top: var(--space-sm);
+    font-size: 0.875rem;
+  }
+
+  .action-tip {
+    margin-top: var(--space-md);
+    padding: var(--space-md);
+    background-color: var(--color-surface-2);
+    border-left: 3px solid var(--color-primary);
+    font-size: 0.875rem;
+  }
+
+  @media (min-width: 640px) {
+    .action-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 768px) {
+    h1 {
+      font-size: 2.75rem;
+    }
+  }
+</style>

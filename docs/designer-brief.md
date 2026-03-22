@@ -4,7 +4,7 @@
 
 A public-facing website that makes a data-driven case that Cleveland Police Department helicopter flights are a community nuisance. This is an advocacy tool — when someone visits the URL (a neighbor, a journalist, a city council member), they should immediately understand the scale of the problem and feel compelled to care.
 
-The site is backed by real flight data collected automatically every day from ADS-B transponder tracking. We have detailed GPS telemetry, timestamps, durations, and flight paths for every CPD helicopter flight going back to August 2025 — and growing daily.
+The site is backed by real flight data collected automatically every day from public transponder tracking. We have detailed GPS telemetry, timestamps, durations, and flight paths for every CPD helicopter flight going back to August 2025 — and growing daily.
 
 ## Audience
 

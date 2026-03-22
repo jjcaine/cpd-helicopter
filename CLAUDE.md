@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Cleveland Police Department helicopter flight tracker. Scrapes ADS-B Exchange for flight data from CPD helicopters and stores it in a PostgreSQL database with detailed telemetry (GPS, altitude, speed, heading, etc.). Automated daily via GitHub Actions.
+Cleveland Police Department helicopter flight tracker. Collects public transponder data from CPD helicopters and stores it in a PostgreSQL database with detailed telemetry (GPS, altitude, speed, heading, etc.). Automated daily via GitHub Actions.
 
 ## Tracked Aircraft
 
@@ -17,7 +17,7 @@ CPD rotates between these helicopters — they don't fly simultaneously. Extende
 
 - **Language:** Python 3.11+
 - **Package manager:** uv
-- **Scraping:** Playwright (headless Chromium) against globe.adsbexchange.com
+- **Scraping:** Playwright (headless Chromium)
 - **Database:** PostgreSQL on DigitalOcean (managed, SSL required)
 - **ORM:** SQLAlchemy
 - **Data export:** Parquet files via PyArrow (committed to repo for public access)
@@ -50,7 +50,7 @@ PYTHONPATH=. uv run python scripts/export_data.py
 ## Architecture
 
 ```
-ADS-B Exchange → Playwright scraper → PostgreSQL (DigitalOcean) → Parquet export → Git repo
+Public transponder data → Playwright scraper → PostgreSQL (DigitalOcean) → Parquet export → Git repo
 ```
 
 - **Source of truth:** PostgreSQL database on DigitalOcean
@@ -74,8 +74,8 @@ Connection configured via `.env` file (see `.env.example`). Production uses Digi
 
 ## How the Scraper Works
 
-1. Playwright loads `globe.adsbexchange.com/?icao={icao}&showTrace={date}`
-2. Intercepts `trace_full` or `trace_recent` JSON responses
+1. Playwright loads the data source with aircraft ICAO code and date
+2. Intercepts trace JSON responses
 3. Parses trace points into flight legs (5+ minute gap = new leg)
 4. Each leg gets full telemetry extracted
 5. Flights are upserted (deduped by icao + start_time)

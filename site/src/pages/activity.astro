@@ -1,0 +1,356 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import flights from '../data/flights-table.json';
+
+// Helper: format duration_minutes into "1h 23m" style
+function formatDuration(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = Math.round(minutes % 60);
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+}
+
+// Helper: format date string "2026-03-20" into "March 20, 2026"
+function formatDate(dateStr: string): string {
+  const [y, mo, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, mo - 1, d);
+  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+// Most recent date's flights for the "last night" quick view
+const mostRecentDate = flights[0]?.date;
+const recentFlights = flights.filter(f => f.date === mostRecentDate);
+const recentDateFormatted = mostRecentDate ? formatDate(mostRecentDate) : '';
+
+// Pre-format all rows at build time
+const rows = flights.map(f => ({
+  id: f.id,
+  date: f.date,
+  dateFormatted: formatDate(f.date),
+  registration: f.registration,
+  startTime: f.start_time,
+  endTime: f.end_time,
+  durationMinutes: f.duration_minutes,
+  durationFormatted: formatDuration(f.duration_minutes),
+}));
+---
+
+<BaseLayout title="Activity" description="Recent Cleveland Police helicopter flights. Look up when the helicopter was flying over your neighborhood.">
+  <section class="section">
+    <div class="container">
+      <h1>Was that the police helicopter?</h1>
+      <p class="page-subtitle">
+        Look up when the Cleveland Police helicopters were flying. All times are Eastern.
+      </p>
+
+      <!-- Last night quick view -->
+      <div class="recent-box">
+        <h2 class="recent-heading">Last recorded flights: {recentDateFormatted}</h2>
+        <ul class="recent-list">
+          {recentFlights.map(f => (
+            <li class="recent-item">
+              <span class="recent-aircraft">{f.registration}</span>
+              <span class="recent-time">{f.start_time} &ndash; {f.end_time}</span>
+              <span class="recent-duration">{formatDuration(f.duration_minutes)}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <!-- Desktop table -->
+      <div class="table-wrap" id="table-wrap">
+        <table id="flights-table">
+          <thead>
+            <tr>
+              <th data-col="date" data-sort="desc" class="sortable sorted">
+                Date<span class="sort-arrow" aria-hidden="true"> &#9660;</span>
+              </th>
+              <th data-col="registration" class="sortable">
+                Aircraft<span class="sort-arrow" aria-hidden="true"></span>
+              </th>
+              <th data-col="startTime" class="sortable">
+                Start<span class="sort-arrow" aria-hidden="true"></span>
+              </th>
+              <th data-col="endTime" class="sortable">
+                End<span class="sort-arrow" aria-hidden="true"></span>
+              </th>
+              <th data-col="durationMinutes" class="sortable">
+                Duration<span class="sort-arrow" aria-hidden="true"></span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(r => (
+              <tr data-date={r.date} data-search={`${r.dateFormatted} ${r.registration} ${r.startTime} ${r.endTime} ${r.durationFormatted}`.toLowerCase()}>
+                <td data-label="Date">{r.dateFormatted}</td>
+                <td data-label="Aircraft">{r.registration}</td>
+                <td data-label="Start">{r.startTime}</td>
+                <td data-label="End">{r.endTime}</td>
+                <td data-label="Duration" data-minutes={r.durationMinutes}>{r.durationFormatted}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  h1 {
+    font-size: 2rem;
+  }
+
+  .page-subtitle {
+    color: var(--color-text-secondary);
+    margin-top: var(--space-sm);
+    max-width: 36rem;
+  }
+
+  /* Recent flights box */
+  .recent-box {
+    margin-top: var(--space-xl);
+    background-color: var(--color-surface-1);
+    border: 1px solid var(--color-border);
+    padding: var(--space-lg);
+  }
+
+  .recent-heading {
+    font-size: 1.125rem;
+    color: var(--color-primary);
+    margin-bottom: var(--space-md);
+  }
+
+  .recent-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .recent-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    font-size: 0.9375rem;
+    padding: var(--space-xs) 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .recent-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .recent-aircraft {
+    font-weight: 600;
+    color: var(--color-text);
+    min-width: 5rem;
+  }
+
+  .recent-time {
+    color: var(--color-text-secondary);
+  }
+
+  .recent-duration {
+    color: var(--color-text-muted);
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Table */
+  .table-wrap {
+    margin-top: var(--space-md);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  thead {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  th {
+    background-color: var(--color-surface-2);
+    color: var(--color-text-secondary);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: var(--space-sm) var(--space-md);
+    text-align: left;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--color-border);
+    user-select: none;
+  }
+
+  th.sortable {
+    cursor: pointer;
+  }
+
+  th.sortable:hover {
+    color: var(--color-text);
+  }
+
+  th.sorted {
+    color: var(--color-primary);
+  }
+
+  .sort-arrow {
+    font-size: 0.625rem;
+    margin-left: 0.25em;
+  }
+
+  td {
+    padding: var(--space-sm) var(--space-md);
+    border-bottom: 1px solid var(--color-border);
+    white-space: nowrap;
+  }
+
+  /* Zebra striping */
+  tbody tr:nth-child(even) {
+    background-color: var(--color-surface-1);
+  }
+
+  tbody tr:nth-child(odd) {
+    background-color: var(--color-bg);
+  }
+
+  tbody tr.hidden {
+    display: none;
+  }
+
+  /* Mobile card layout */
+  @media (max-width: 639px) {
+    thead {
+      display: none;
+    }
+
+    tbody tr {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-xs) var(--space-md);
+      padding: var(--space-md);
+      border-bottom: 1px solid var(--color-border);
+      background-color: var(--color-surface-1);
+      margin-bottom: var(--space-sm);
+    }
+
+    tbody tr:nth-child(even) {
+      background-color: var(--color-surface-2);
+    }
+
+    td {
+      padding: 0;
+      border-bottom: none;
+      white-space: normal;
+    }
+
+    td::before {
+      content: attr(data-label);
+      display: block;
+      font-size: 0.6875rem;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.125rem;
+    }
+
+    /* Date spans full width */
+    td:first-child {
+      grid-column: 1 / -1;
+      font-weight: 600;
+      color: var(--color-primary);
+    }
+  }
+
+  @media (min-width: 768px) {
+    h1 {
+      font-size: 2.75rem;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const table = document.getElementById('flights-table') as HTMLTableElement;
+    const tbody = table.querySelector('tbody')!;
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    // --- Sorting ---
+    const headers = table.querySelectorAll('th.sortable');
+
+    // Parse a time string like "7:15 PM" into minutes for sorting
+    function parseTime(str: string): number {
+      const match = str.match(/(\d+):(\d+)\s*(AM|PM)/i);
+      if (!match) return 0;
+      let h = parseInt(match[1], 10);
+      const m = parseInt(match[2], 10);
+      const ampm = match[3].toUpperCase();
+      if (ampm === 'PM' && h !== 12) h += 12;
+      if (ampm === 'AM' && h === 12) h = 0;
+      return h * 60 + m;
+    }
+
+    function getSortValue(row: HTMLTableRowElement, col: string): string | number {
+      const cells = row.querySelectorAll('td');
+      switch (col) {
+        case 'date': return row.getAttribute('data-date') || '';
+        case 'registration': return cells[1]?.textContent?.trim() || '';
+        case 'startTime': return parseTime(cells[2]?.textContent?.trim() || '');
+        case 'endTime': return parseTime(cells[3]?.textContent?.trim() || '');
+        case 'durationMinutes': return parseFloat(cells[4]?.getAttribute('data-minutes') || '0');
+        default: return '';
+      }
+    }
+
+    headers.forEach(th => {
+      th.addEventListener('click', () => {
+        const col = (th as HTMLElement).getAttribute('data-col')!;
+        const currentDir = (th as HTMLElement).getAttribute('data-sort');
+        const newDir = currentDir === 'desc' ? 'asc' : 'desc';
+
+        // Reset all headers
+        headers.forEach(h => {
+          (h as HTMLElement).removeAttribute('data-sort');
+          h.classList.remove('sorted');
+          const arrow = h.querySelector('.sort-arrow');
+          if (arrow) arrow.textContent = '';
+        });
+
+        // Set current
+        (th as HTMLElement).setAttribute('data-sort', newDir);
+        th.classList.add('sorted');
+        const arrow = th.querySelector('.sort-arrow');
+        if (arrow) arrow.innerHTML = newDir === 'asc' ? ' &#9650;' : ' &#9660;';
+
+        // Sort rows
+        rows.sort((a, b) => {
+          const va = getSortValue(a, col);
+          const vb = getSortValue(b, col);
+
+          let cmp: number;
+          if (typeof va === 'number' && typeof vb === 'number') {
+            cmp = va - vb;
+          } else {
+            cmp = String(va).localeCompare(String(vb));
+          }
+
+          return newDir === 'asc' ? cmp : -cmp;
+        });
+
+        // Re-append in order
+        const fragment = document.createDocumentFragment();
+        rows.forEach(r => fragment.appendChild(r));
+        tbody.appendChild(fragment);
+      });
+    });
+  });
+</script>

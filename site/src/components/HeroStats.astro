@@ -1,0 +1,93 @@
+---
+interface Props {
+  totalHours: number;
+  nightsPast9pm: number;
+  costEstimateLow: number;
+  costEstimateHigh: number;
+  pctDaysWithFlights: number;
+  totalDays: number;
+}
+
+const { totalHours, nightsPast9pm, costEstimateLow, costEstimateHigh, pctDaysWithFlights, totalDays } = Astro.props;
+
+function formatNumber(n: number): string {
+  return n.toLocaleString('en-US');
+}
+
+function formatCost(low: number, high: number): string {
+  if (low === 0 && high === 0) return '$0';
+  const fmtLow = '$' + Math.round(low / 1000) + 'K';
+  const fmtHigh = '$' + Math.round(high / 1000) + 'K';
+  return `${fmtLow}\u2013${fmtHigh}`;
+}
+---
+
+<div class="hero-stats">
+  <div class="stat-card">
+    <span class="stat-number">{formatNumber(totalHours)}</span>
+    <span class="stat-label">hours of helicopter noise</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-number">{formatNumber(nightsPast9pm)}</span>
+    <span class="stat-label">nights flying past 9 PM</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-number">{formatCost(costEstimateLow, costEstimateHigh)}</span>
+    <span class="stat-label">estimated taxpayer cost</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-number">{pctDaysWithFlights}%</span>
+    <span class="stat-label">of the last {totalDays} days had flights</span>
+  </div>
+</div>
+
+<style>
+  .hero-stats {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+    padding: var(--space-xl) 0;
+  }
+
+  .stat-card {
+    background-color: var(--color-surface-1);
+    border: 1px solid var(--color-border);
+    padding: var(--space-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+
+  .stat-number {
+    font-family: var(--font-heading);
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--color-primary);
+  }
+
+  .stat-label {
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  @media (min-width: 640px) {
+    .hero-stats {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .hero-stats {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .stat-number {
+      font-size: 3rem;
+    }
+  }
+</style>
