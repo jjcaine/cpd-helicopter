@@ -18,6 +18,7 @@ const sleepPct = Math.round((sleepHours / totalFlightHours) * 100);
       <p class="hero-subtitle">Here's the data.</p>
 
       <HeroStats
+        totalFlights={stats.total_flights}
         totalHours={stats.total_hours}
         nightsPast9pm={stats.nights_past_9pm}
         costEstimateLow={stats.cost_estimate_low}

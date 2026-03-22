@@ -32,6 +32,27 @@ def load_flights() -> pd.DataFrame:
     )
     df = df.drop(columns=["start_rounded"]).reset_index(drop=True)
 
+    # Merge midnight-split flights: same aircraft, gap < 60 seconds
+    df = df.sort_values(["icao", "start_time"]).reset_index(drop=True)
+    merged_indices = set()
+    for icao, group in df.groupby("icao"):
+        idxs = group.index.tolist()
+        for i in range(1, len(idxs)):
+            prev_idx = idxs[i - 1]
+            curr_idx = idxs[i]
+            if prev_idx in merged_indices:
+                continue
+            gap = (df.loc[curr_idx, "start_time"] - df.loc[prev_idx, "end_time"]).total_seconds()
+            if 0 <= gap < 60:
+                # Extend the previous flight to cover the current one
+                df.loc[prev_idx, "end_time"] = df.loc[curr_idx, "end_time"]
+                df.loc[prev_idx, "duration"] = df.loc[prev_idx, "end_time"] - df.loc[prev_idx, "start_time"]
+                df.loc[prev_idx, "telemetry_points"] += df.loc[curr_idx, "telemetry_points"]
+                merged_indices.add(curr_idx)
+    if merged_indices:
+        df = df.drop(index=merged_indices).reset_index(drop=True)
+        print(f"  Merged {len(merged_indices)} midnight-split flights")
+
     # Convert duration timedelta to hours
     df["duration_hours"] = df["duration"].dt.total_seconds() / 3600
     df["duration_minutes"] = df["duration"].dt.total_seconds() / 60

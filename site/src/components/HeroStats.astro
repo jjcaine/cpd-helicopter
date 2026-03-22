@@ -1,5 +1,6 @@
 ---
 interface Props {
+  totalFlights: number;
   totalHours: number;
   nightsPast9pm: number;
   costEstimateLow: number;
@@ -8,7 +9,7 @@ interface Props {
   totalDays: number;
 }
 
-const { totalHours, nightsPast9pm, costEstimateLow, costEstimateHigh, pctDaysWithFlights, totalDays } = Astro.props;
+const { totalFlights, totalHours, nightsPast9pm, costEstimateLow, costEstimateHigh, pctDaysWithFlights, totalDays } = Astro.props;
 
 function formatNumber(n: number): string {
   return n.toLocaleString('en-US');
@@ -25,8 +26,8 @@ const annualHigh = Math.round((costEstimateHigh / totalDays) * 365 / 1000);
     <span class="stat-label">taxpayer money to refurbish two helicopters</span>
   </div>
   <div class="stat-card">
-    <span class="stat-number">{formatNumber(totalHours)}</span>
-    <span class="stat-label">hours of helicopter noise since Aug 2025</span>
+    <span class="stat-number">{formatNumber(totalFlights)}</span>
+    <span class="stat-label">flights in the last {totalDays} days</span>
   </div>
   <div class="stat-card">
     <span class="stat-number">{formatNumber(nightsPast9pm)}</span>
