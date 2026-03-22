@@ -1,0 +1,144 @@
+{
+  "project": "cpd-helicopter",
+  "name": "Cleveland Helicopter Watch",
+  "domain": "clehelicopterwatch.com",
+  "email": "hello@clehelicopterwatch.com",
+  "repo": "github.com/jjcaine/cpd-helicopter",
+  "hosted_on": "Vercel (auto-deploys on push to main)",
+  "database": "DigitalOcean managed PostgreSQL",
+
+  "summary": "Civic advocacy site tracking Cleveland Police Department helicopter flights. Scrapes public ADS-B transponder data daily, stores in PostgreSQL, exports to Parquet, pre-processes into JSON, builds a static Astro site deployed on Vercel. The site presents flight data with interactive visualizations to make the case that CPD helicopter operations are a community nuisance.",
+
+  "current_state": {
+    "data_pipeline": "Fully operational. GitHub Action runs daily at 6 AM UTC — scrapes flights, exports Parquet, builds site JSON, commits, pushes. Vercel auto-deploys.",
+    "database": "296 flights, 496K telemetry points. Clean — duplicates were purged this session.",
+    "site": "Live on Vercel. 4 pages: dashboard (stats + charts + map), flight log (sortable table), research (3 pillars with citations), take action (311 + council + share). Dark theme with amber accent. All data is real.",
+    "design": "Functional but needs a v2 restyle. Current dark theme is too dramatic. A light-theme ProPublica-style redesign is planned — see docs/v2-redesign-notes.md and docs/designer-brief-v2.md. A Stitch project (ID: 16847667462324667654) has been created with light theme designs generating."
+  },
+
+  "immediate_next_steps": [
+    {
+      "priority": 1,
+      "task": "v2 redesign: light/dark mode",
+      "details": "Restyle the site with light background as default, dark as alternate. Add prefers-color-scheme support + manual toggle. Soften accent color from bright orange (#f59e0b) to muted amber (#a67c00) or similar. Swap map basemap to light style. Adjust all chart colors for light background. See docs/v2-redesign-notes.md for full spec.",
+      "files": ["site/src/styles/global.css", "site/src/layouts/BaseLayout.astro", "site/src/lib/calendar-chart.ts", "site/src/lib/histogram-chart.ts", "site/src/lib/flight-map.ts", "all .astro page files"]
+    },
+    {
+      "priority": 2,
+      "task": "Soften copy/tone across all pages",
+      "details": "Shift from advocacy tone to informative tone. Let data lead, reduce combative framing. Landing headline should invite curiosity not accuse. 'Make it stop.' on Take Action is too aggressive. See docs/v2-redesign-notes.md for specific copy to revisit.",
+      "files": ["site/src/pages/index.astro", "site/src/pages/action.astro", "site/src/pages/research.astro"]
+    },
+    {
+      "priority": 3,
+      "task": "Reddit post for r/cleveland",
+      "details": "Draft a post telling the story of tracking the helicopters and sharing the dashboard. Search r/cleveland for existing helicopter complaint threads to reference. Tone: neighbor sharing data, not activist. See docs/advocacy-strategy.md 'Next Steps: Distribution' section.",
+      "files": ["docs/advocacy-strategy.md"]
+    },
+    {
+      "priority": 4,
+      "task": "Fix tooltip hover on calendar heatmap",
+      "details": "Custom tooltips on the calendar chart are inconsistent — sometimes require a click before hover works. The issue may be related to Observable Plot's SVG structure or event handling. Multiple approaches were tried (tip:true, custom elementFromPoint, direct addEventListener). Current implementation uses pointerenter on individual rects. Needs debugging.",
+      "files": ["site/src/lib/calendar-chart.ts"]
+    },
+    {
+      "priority": 5,
+      "task": "OG image for light theme",
+      "details": "Current social card is dark background. If site goes light, may need a matching light social card or one that works for both.",
+      "files": ["site/public/og-image.svg", "site/public/og-image.png"]
+    }
+  ],
+
+  "open_issues": [
+    {
+      "github_issue": 4,
+      "title": "Add VFR-eligible day analysis using METAR data",
+      "details": "Pull historical METARs from KCLE via Iowa Environmental Mesonet API. Determine VFR eligibility per evening (ceiling >= 1000ft, vis >= 3SM). Show what % of flyable nights they actually flew. Would strengthen the frequency argument significantly."
+    }
+  ],
+
+  "key_files": {
+    "data_pipeline": {
+      "scraper": "src/scraper.py",
+      "main_cli": "src/main.py",
+      "database": "src/database.py",
+      "models": "src/models.py",
+      "config": "src/config.py",
+      "parquet_export": "scripts/export_data.py",
+      "site_json_builder": "scripts/build_site_data.py",
+      "daily_sync_workflow": ".github/workflows/daily-sync.yml"
+    },
+    "site": {
+      "astro_config": "site/astro.config.mjs",
+      "global_css": "site/src/styles/global.css",
+      "layout": "site/src/layouts/BaseLayout.astro",
+      "nav": "site/src/components/Nav.astro",
+      "footer": "site/src/components/Footer.astro",
+      "hero_stats": "site/src/components/HeroStats.astro",
+      "landing_page": "site/src/pages/index.astro",
+      "flight_log_page": "site/src/pages/activity.astro",
+      "research_page": "site/src/pages/research.astro",
+      "action_page": "site/src/pages/action.astro",
+      "calendar_chart": "site/src/lib/calendar-chart.ts",
+      "histogram_chart": "site/src/lib/histogram-chart.ts",
+      "flight_map": "site/src/lib/flight-map.ts",
+      "generated_json": "site/src/data/*.json"
+    },
+    "docs": {
+      "project_readme": "README.md",
+      "claude_md": "CLAUDE.md",
+      "advocacy_strategy": "docs/advocacy-strategy.md",
+      "designer_brief_v1": "docs/designer-brief.md",
+      "designer_brief_v2": "docs/designer-brief-v2.md",
+      "v2_redesign_notes": "docs/v2-redesign-notes.md"
+    }
+  },
+
+  "tech_stack": {
+    "scraper": "Python 3.11+, Playwright, SQLAlchemy, psycopg2",
+    "database": "PostgreSQL on DigitalOcean (managed, SSL required)",
+    "data": "Parquet via PyArrow, H3 for hex binning",
+    "site": "Astro 6, Observable Plot (charts), deck.gl + MapLibre (map)",
+    "hosting": "Vercel (static, auto-deploy on push)",
+    "ci": "GitHub Actions (daily sync, test, notebook export)",
+    "package_manager": "uv (Python), npm (site)"
+  },
+
+  "tracked_aircraft": {
+    "ad389e": {"registration": "N951CP", "type": "MD 500E (Hughes 369E)"},
+    "ad3c55": {"registration": "N952CP", "type": "MD 500E (Hughes 369E)"}
+  },
+
+  "data_stats_as_of_march_2026": {
+    "total_flights": 250,
+    "total_flights_in_db": 296,
+    "note": "250 after dedup + midnight-merge; 296 raw in DB",
+    "total_hours": 374,
+    "telemetry_points": 496265,
+    "tracking_period": "2025-08-14 to 2026-03-20",
+    "days_tracked": 219,
+    "days_with_flights": 122,
+    "pct_after_7pm": 63,
+    "median_altitude_agl_ft": 725,
+    "noise_at_ground_db": "82-84"
+  },
+
+  "user_preferences": {
+    "tone": "Informative, data-forward. Not angry or conspiratorial. Let data speak.",
+    "language": "8th grade reading level. No jargon. Dead simple.",
+    "avoid": [
+      "Race-specific framing (DEI concerns in current political climate)",
+      "Recommending drones as helicopter replacement (surveillance concerns)",
+      "Mentioning ADS-B Exchange by name (possible TOS violation)",
+      "Leaning on the News 5 / Polensek angle (his position was 'fly more' not 'fly less')"
+    ],
+    "design": "Moving toward light theme, ProPublica editorial style. Away from dark dramatic intelligence-briefing aesthetic.",
+    "color": "Current orange (#f59e0b) is too aggressive. Try muted amber (#a67c00), slate blue (#4a6fa5), or deep teal (#0d7377)."
+  },
+
+  "stitch_mcp": {
+    "v1_project_id": "17161178152752849342",
+    "v2_project_id": "16847667462324667654",
+    "note": "Stitch MCP server provides access to designer mockups. v1 is dark theme (used for current site). v2 is light editorial theme (for redesign). Add server with: claude mcp add stitch --transport http --url 'https://stitch.googleapis.com/mcp' --header 'X-Goog-Api-Key: AQ.Ab8RN6IYebHM8_WBf85YMCHgR0J97Q-cePO0qY9dRkR4IsmuZw'"
+  }
+}
