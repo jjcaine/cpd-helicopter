@@ -123,3 +123,19 @@ Curated citations organized by pillar with plain-language summaries. Not an acad
 - [ ] Are there neighborhood associations or advocacy orgs already working on this?
 - [x] Noise measurements — MD 500E at median patrol altitude of 725 ft AGL produces ~82-84 dBA at ground level. At 500 ft (25% of flight time), ~87 dBA. WHO nighttime limit is 40 dB.
 - [x] Flight path heat map built — 870 H3 hex cells showing patrol concentration across Cleveland neighborhoods.
+
+## Next Steps: Distribution
+
+### Reddit Post (r/cleveland)
+- Search r/cleveland for existing helicopter complaint threads — link to them to show this is a longstanding community issue, not one person's grievance
+- Draft a post telling the story: started tracking the helicopters, built a public dashboard, here's what the data shows
+- Include the site link, key stats, and a call to action (share, call 311, contact council)
+- Tone: neighbor sharing data, not activist manifesto. "I got tired of hearing it every night so I started tracking it. Here's what I found."
+- Reference prior threads to build on existing community frustration
+- Post to r/cleveland, possibly r/ohio, r/dataisbeautiful
+
+### Other Distribution
+- [ ] Share with neighborhood Facebook groups and Nextdoor
+- [ ] Send to Tara Morgan at News 5 (original helicopter investigation reporter) with the dashboard link
+- [ ] Contact council member with dashboard as presentation material
+- [ ] Share on Twitter/X with the social card
