@@ -19,12 +19,11 @@ const sleepPct = Math.round((sleepHours / totalFlightHours) * 100);
 
       <HeroStats
         totalFlights={stats.total_flights}
-        totalHours={stats.total_hours}
-        nightsPast9pm={stats.nights_past_9pm}
+        totalDays={stats.total_days}
         costEstimateLow={stats.cost_estimate_low}
         costEstimateHigh={stats.cost_estimate_high}
-        pctDaysWithFlights={stats.total_days > 0 ? Math.round((stats.days_with_flights / stats.total_days) * 100) : 0}
-        totalDays={stats.total_days}
+        totalHours={stats.total_hours}
+        pctAfter7pm={windDownPct + sleepPct}
       />
 
       {stats.date_start && stats.date_end && (

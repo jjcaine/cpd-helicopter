@@ -1,21 +1,19 @@
 ---
 interface Props {
   totalFlights: number;
-  totalHours: number;
-  nightsPast9pm: number;
+  totalDays: number;
   costEstimateLow: number;
   costEstimateHigh: number;
-  pctDaysWithFlights: number;
-  totalDays: number;
+  totalHours: number;
+  pctAfter7pm: number;
 }
 
-const { totalFlights, totalHours, nightsPast9pm, costEstimateLow, costEstimateHigh, pctDaysWithFlights, totalDays } = Astro.props;
+const { totalFlights, totalDays, costEstimateLow, costEstimateHigh, totalHours, pctAfter7pm } = Astro.props;
 
 function formatNumber(n: number): string {
   return n.toLocaleString('en-US');
 }
 
-// Annualize: tracked hours / tracked days * 365
 const annualLow = Math.round((costEstimateLow / totalDays) * 365 / 1000);
 const annualHigh = Math.round((costEstimateHigh / totalDays) * 365 / 1000);
 ---
@@ -30,12 +28,13 @@ const annualHigh = Math.round((costEstimateHigh / totalDays) * 365 / 1000);
     <span class="stat-label">flights in the last {totalDays} days</span>
   </div>
   <div class="stat-card">
-    <span class="stat-number">{formatNumber(nightsPast9pm)}</span>
-    <span class="stat-label">nights flying past 9 PM</span>
+    <span class="stat-number">{pctAfter7pm}%</span>
+    <span class="stat-label">of flights happen after 7 PM</span>
   </div>
   <div class="stat-card">
-    <span class="stat-number">{pctDaysWithFlights}%</span>
-    <span class="stat-label">of the last {totalDays} days had flights</span>
+    <span class="stat-number">~82 dB</span>
+    <span class="stat-label">noise at ground level</span>
+    <span class="stat-cite"><a href="/research/#health">The WHO says 40 dB is the safe limit for nighttime →</a></span>
   </div>
 </div>
 <p class="cost-context">
@@ -77,6 +76,24 @@ const annualHigh = Math.round((costEstimateHigh / totalDays) * 365 / 1000);
     color: var(--color-text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
+  }
+
+  .stat-cite {
+    font-size: 0.75rem;
+    font-style: italic;
+    text-transform: none;
+    letter-spacing: 0;
+    margin-top: 0.25rem;
+  }
+
+  .stat-cite a {
+    color: var(--color-text-muted);
+    text-decoration: none;
+  }
+
+  .stat-cite a:hover {
+    color: var(--color-primary);
+    text-decoration: underline;
   }
 
   .cost-context {
