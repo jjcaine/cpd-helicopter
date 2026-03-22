@@ -40,10 +40,13 @@ jobs:
           DB_NAME: ${{ secrets.DB_NAME }}
         run: PYTHONPATH=. uv run python scripts/export_data.py
 
+      - name: Build site data from Parquet
+        run: PYTHONPATH=. uv run python scripts/build_site_data.py
+
       - name: Commit data export
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/
+          git add data/ site/src/data/
           git diff --staged --quiet || git commit -m "Update data export"
           git push
