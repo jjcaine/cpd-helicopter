@@ -18,11 +18,11 @@ const sleepPct = Math.round((sleepHours / totalFlightHours) * 100);
       <div class="hero-grid">
         <div class="hero-headline">
           <span class="hero-eyebrow">Cleveland Police Helicopter Tracker</span>
-          <h1>They fly over your neighborhood almost every night.</h1>
+          <h1>How often do Cleveland police helicopters fly?</h1>
         </div>
         <div class="hero-quote">
           <blockquote>
-            Cleveland police helicopters flew <strong>{stats.total_flights}</strong> times in <strong>{stats.total_days}</strong> days. <strong>{windDownPct + sleepPct}%</strong> of those flights happened after 7&nbsp;PM.
+            We've been tracking since August 2025. So far: <strong>{stats.total_flights}</strong> flights in <strong>{stats.total_days}</strong> days. <strong>{windDownPct + sleepPct}%</strong> happened after 7&nbsp;PM.
           </blockquote>
         </div>
       </div>
@@ -54,7 +54,7 @@ const sleepPct = Math.round((sleepHours / totalFlightHours) * 100);
         <div class="dashboard-center">
           <div class="panel-header">
             <h2>Where they fly</h2>
-            <p>Flight paths plotted on the map. See which neighborhoods get circled the most.</p>
+            <p>Flight paths plotted on the map, based on public transponder data.</p>
           </div>
           <div class="chart-container chart-container--map" id="flight-map"></div>
         </div>
@@ -97,15 +97,15 @@ const sleepPct = Math.round((sleepHours / totalFlightHours) * 100);
         <div class="content-editorial">
           <h2>Why this matters</h2>
           <p>
-            CPD spent <strong>$3.5 million</strong> of taxpayer money to refurbish two helicopters.
-            They fly almost every night, often circling low over residential neighborhoods during hours
-            when families are winding down and sleeping.
+            Cleveland spent <strong>$3.5 million</strong> to refurbish two police helicopters.
+            They fly on more than half of all days, often circling over residential neighborhoods
+            during evening and nighttime hours.
           </p>
           <p>
             At ground level, these helicopters produce approximately <strong>82 dB</strong> of noise.
-            The World Health Organization says <strong>40 dB</strong> is the safe limit for nighttime
-            noise exposure. That means residents are exposed to noise levels more than double the
-            recommended maximum.
+            The World Health Organization recommends a nighttime limit of <strong>40 dB</strong>.
+            Peer-reviewed research links this level of noise exposure to sleep disruption,
+            cardiovascular harm, and impacts on children's learning.
           </p>
         </div>
         <div class="content-cta-cards">
