@@ -65,5 +65,9 @@ const fullTitle = title === 'Cleveland Helicopter Watch'
       <slot />
     </main>
     <Footer />
+    <script>
+      import { inject } from '@vercel/analytics';
+      inject();
+    </script>
   </body>
 </html>
