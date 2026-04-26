@@ -1,6 +1,7 @@
 ---
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
+import Analytics from '@vercel/analytics/astro';
 import '../styles/global.css';
 
 interface Props {
@@ -58,6 +59,7 @@ const fullTitle = title === 'Cleveland Helicopter Watch'
     <meta name="twitter:title" content={fullTitle} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content="/og-image.png" />
+    <Analytics />
   </head>
   <body>
     <Nav />
@@ -65,9 +67,5 @@ const fullTitle = title === 'Cleveland Helicopter Watch'
       <slot />
     </main>
     <Footer />
-    <script>
-      import { inject } from '@vercel/analytics';
-      inject();
-    </script>
   </body>
 </html>
