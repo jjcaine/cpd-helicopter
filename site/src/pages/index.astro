@@ -135,26 +135,30 @@ const sleepPct = Math.round((sleepHours / totalFlightHours) * 100);
 
 <script>
   import { renderCalendarChart } from '../lib/calendar-chart';
+  import { renderHistogramChart } from '../lib/histogram-chart';
   import calendarData from '../data/calendar.json';
+  import histogramData from '../data/histogram.json';
 
   const calendarEl = document.getElementById('calendar-chart');
   if (calendarEl) renderCalendarChart(calendarEl, calendarData);
-</script>
-
-<script>
-  import { renderHistogramChart } from '../lib/histogram-chart';
-  import histogramData from '../data/histogram.json';
 
   const histogramEl = document.getElementById('histogram-chart');
   if (histogramEl) renderHistogramChart(histogramEl, histogramData);
-</script>
-
-<script>
-  import { renderFlightMap } from '../lib/flight-map';
-  import hexData from '../data/hex-map.json';
 
   const mapEl = document.getElementById('flight-map');
-  if (mapEl) renderFlightMap(mapEl, hexData);
+  if (mapEl) {
+    Promise.all([
+      import('../lib/flight-map'),
+      import('../data/hex-map.json'),
+    ])
+      .then(([{ renderFlightMap }, { default: hexData }]) => {
+        renderFlightMap(mapEl, hexData);
+      })
+      .catch((error) => {
+        console.error('Unable to load the flight map.', error);
+        mapEl.textContent = 'The flight map could not be loaded.';
+      });
+  }
 </script>
 
 <style>
