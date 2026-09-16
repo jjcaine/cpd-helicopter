@@ -2,57 +2,69 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
-<BaseLayout title="Take Action" description="How to help reduce police helicopter noise in Cleveland. File complaints, contact your council member, get involved.">
+<BaseLayout title="Take Action" description="Ways Cleveland residents can bring helicopter-noise concerns to local civic conversations.">
   <!-- ============ HERO ============ -->
   <section class="hero">
     <div class="hero-inner">
       <span class="hero-eyebrow">Take Action</span>
       <h1>Here's what you can do.</h1>
       <p class="hero-subtitle">
-        If helicopter noise is affecting your neighborhood, there are a few concrete
-        steps you can take. Every report and every call adds up.
+        Turn what you observe into a grounded question and bring it to the people and groups
+        that shape neighborhood policing conversations.
       </p>
     </div>
   </section>
 
-  <!-- ============ FEATURED ACTION: CALL 311 ============ -->
+  <!-- ============ FEATURED ACTION: DPC MEETING ============ -->
   <section class="actions">
     <div class="actions-inner">
       <div class="actions-grid">
-        <!-- PRIMARY CARD: Call 311 -->
+        <!-- PRIMARY CARD: DPC meeting -->
         <div class="action-card action-card--primary">
           <div class="action-card-accent"></div>
           <div class="action-card-body">
             <span class="card-eyebrow">Step 1</span>
-            <h2>Call 311</h2>
+            <h2>Attend a District Policing Committee meeting</h2>
             <p>
-              Call <strong>311</strong> (or 216-664-2000) when helicopter noise disrupts your evening
-              or wakes you up. Cleveland's 311 system doesn't have a "helicopter noise" category,
-              so use <strong>"Street Issues"</strong> or describe it as a noise disturbance.
-              Every call gets logged and creates a public record. When enough residents report the
-              same issue, those numbers show up in the city's open data portal.
+              Cleveland has one District Policing Committee (DPC) for each police district. Meetings
+              are open to community members and are a place to speak with district command and officers
+              about local concerns and policing practices.
             </p>
             <p class="action-detail">
-              You can also file online at <a href="https://www.clevelandohio.gov/311" target="_blank" rel="noopener">clevelandohio.gov/311</a>,
-              but calling is faster and harder to ignore.
+              Review the <a href="https://clecpc.org/get-involved/dpc-meetings/" target="_blank" rel="noopener">DPC meeting information</a>
+              and confirm current details in the <a href="https://www.clecpc.org/events-calendar" target="_blank" rel="noopener">CLECPC events calendar</a>.
             </p>
             <div class="action-tip">
-              <strong>What to say:</strong> "I'd like to report a noise disturbance from a Cleveland Police
-              helicopter circling my neighborhood at [time]. This happens regularly and is disrupting
-              sleep in my household."
+              <strong>Come prepared:</strong> Bring the date, time, location, and route you observed,
+              plus a specific question. Flight data cannot establish a flight's purpose, and meetings
+              do not guarantee an immediate answer, but clear observations can support a useful conversation.
             </div>
-            <a href="tel:+12166642000" class="cta-button">Call 216-664-2000 now &rarr;</a>
+            <a href="https://clecpc.org/get-involved/dpc-meetings/" target="_blank" rel="noopener" class="cta-button">Find your DPC meeting &rarr;</a>
           </div>
         </div>
 
         <!-- SECONDARY CARDS ROW -->
         <div class="action-card action-card--secondary">
           <span class="card-eyebrow">Step 2</span>
+          <h3>Talk with block clubs or neighborhood organizations</h3>
+          <p>
+            Bring the same observations and question to block clubs or neighborhood organizations.
+            These groups can help residents compare experiences, identify common concerns, and decide
+            whether to raise a topic together at a DPC meeting or another public forum.
+          </p>
+          <p class="action-detail">
+            Not sure who serves your neighborhood? Use Cleveland Neighborhood Progress's
+            <a href="https://clevelandnp.org/cleveland-cdcs/" target="_blank" rel="noopener">directory of local community development organizations</a>
+            as a starting point.
+          </p>
+        </div>
+
+        <div class="action-card action-card--secondary">
+          <span class="card-eyebrow">Step 3</span>
           <h3>Contact your council member</h3>
           <p>
-            City council oversees the police budget. Your council member can ask questions
-            about how the helicopters are used and whether the $3.5 million refurbishment
-            is delivering value. Let them know this matters to you.
+            You can also let your council member know how helicopter activity affects your neighborhood
+            and ask what public information or follow-up may be available.
           </p>
           <p class="action-detail">
             Find your ward and council member at
@@ -61,25 +73,16 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         </div>
 
         <div class="action-card action-card--secondary">
-          <span class="card-eyebrow">Step 3</span>
-          <h3>Share the data</h3>
+          <span class="card-eyebrow">About this site</span>
+          <h3>An independent civic project</h3>
           <p>
-            Send this site to your neighbors, your neighborhood association, your neighborhood
-            Facebook group, or a local journalist. The more people who see the data, the more
-            likely something changes.
-          </p>
-        </div>
-
-        <div class="action-card action-card--secondary">
-          <span class="card-eyebrow">Step 4</span>
-          <h3>Get involved</h3>
-          <p>
-            Want to help? We're looking for neighbors who care about this issue,
-            people willing to attend council meetings, and anyone who wants to help
-            make the case with data.
+            The creator is the elected secretary of Cleveland's Second District Policing Committee.
+            This site is independent and not an official DPC/City/CDP project. It presents public
+            flight data for community discussion; it does not determine why a flight occurred.
           </p>
           <p class="action-detail">
-            Reach out at <a href="mailto:hello@clehelicopterwatch.com">hello@clehelicopterwatch.com</a>.
+            Questions about the site? Reach out at
+            <a href="mailto:hello@clehelicopterwatch.com">hello@clehelicopterwatch.com</a>.
           </p>
         </div>
       </div>
@@ -154,7 +157,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     gap: var(--space-xl);
   }
 
-  /* ---- Primary card (Call 311) ---- */
+  /* ---- Primary card (DPC meeting) ---- */
   .action-card--primary {
     position: relative;
     background-color: var(--color-surface-4);
@@ -310,11 +313,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     }
 
     .action-card--secondary:nth-child(3) {
-      grid-column: 1 / span 4;
+      grid-column: 1 / span 6;
     }
 
     .action-card--secondary:nth-child(4) {
-      grid-column: 5 / span 4;
+      grid-column: 7 / span 6;
     }
   }
 </style>
