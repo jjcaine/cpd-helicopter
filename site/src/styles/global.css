@@ -1,5 +1,6 @@
-/* Google Fonts: Newsreader (serif headings) */
-@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400&display=swap');
+/* Fontsource: Newsreader (serif headings) */
+@import '@fontsource-variable/newsreader/standard.css';
+@import '@fontsource-variable/newsreader/standard-italic.css';
 
 /* Fontsource: Inter (sans body) */
 @import '@fontsource/inter/400.css';
@@ -47,7 +48,7 @@
   --color-sleep-label: rgba(200, 50, 50, 0.5);
 
   /* Typography */
-  --font-heading: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --font-heading: 'Newsreader Variable', Georgia, 'Times New Roman', serif;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   /* Spacing scale */
