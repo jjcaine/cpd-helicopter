@@ -1,7 +1,10 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import CalendarFallback from '../components/CalendarFallback.astro';
 import HeroStats from '../components/HeroStats.astro';
+import HistogramFallback from '../components/HistogramFallback.astro';
 import stats from '../data/stats.json';
+import calendar from '../data/calendar.json';
 import histogram from '../data/histogram.json';
 
 const totalFlightHours = histogram.reduce((sum: number, d: {hour: number, flights: number}) => sum + d.flights, 0);
@@ -68,7 +71,9 @@ const sleepPct = Math.round((sleepHours / totalFlightHours) * 100);
               <h2>When they fly</h2>
               <p>Every day, colored by hours of helicopter activity.</p>
             </div>
-            <div class="chart-container" id="calendar-chart"></div>
+            <div class="chart-container" id="calendar-chart">
+              <CalendarFallback data={calendar} />
+            </div>
           </div>
           <div class="right-panel">
             <div class="panel-header">
@@ -85,7 +90,9 @@ const sleepPct = Math.round((sleepHours / totalFlightHours) * 100);
                 <span class="time-stat-label">sleeping hours <span class="time-stat-range">10 PM–5 AM</span></span>
               </div>
             </div>
-            <div class="chart-container" id="histogram-chart"></div>
+            <div class="chart-container" id="histogram-chart">
+              <HistogramFallback data={histogram} />
+            </div>
           </div>
         </div>
       </div>

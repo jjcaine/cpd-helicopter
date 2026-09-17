@@ -1,0 +1,70 @@
+---
+interface HistogramEntry {
+  hour: number;
+  flights: number;
+}
+
+const { data } = Astro.props as { data: HistogramEntry[] };
+const maxFlights = Math.max(...data.map((entry) => entry.flights), 1);
+const formatHour = (hour: number) => {
+  if (hour === 0) return '12 AM';
+  if (hour < 12) return `${hour} AM`;
+  if (hour === 12) return '12 PM';
+  return `${hour - 12} PM`;
+};
+---
+
+<ol class="histogram-fallback" aria-label="Flights by hour of day">
+  {data.map((entry) => (
+    <li
+      class="histogram-fallback-bar"
+      data-chart-mark="hour-bar"
+      data-hour={entry.hour}
+      aria-label={`${formatHour(entry.hour)}: ${entry.flights} ${entry.flights === 1 ? 'flight' : 'flights'}`}
+      style={`--bar-height: ${(entry.flights / maxFlights) * 100}%;`}
+    >
+      <span class="histogram-fallback-value" aria-hidden="true">{entry.flights}</span>
+      <span class="histogram-fallback-label" aria-hidden="true">{entry.hour % 3 === 0 ? formatHour(entry.hour).replace(' ', '').toLowerCase() : ''}</span>
+    </li>
+  ))}
+</ol>
+
+<style>
+  .histogram-fallback {
+    display: grid;
+    grid-template-columns: repeat(24, minmax(9px, 1fr));
+    gap: 3px;
+    align-items: end;
+    height: 12rem;
+    padding: 0 2px;
+    border-bottom: 1px solid var(--color-chart-grid);
+  }
+
+  .histogram-fallback-bar {
+    display: grid;
+    grid-template-rows: 1fr auto;
+    align-items: end;
+    height: 100%;
+    min-width: 0;
+    color: var(--color-text-muted);
+    font-size: 0.625rem;
+    line-height: 1.2;
+    text-align: center;
+  }
+
+  .histogram-fallback-value {
+    display: block;
+    width: 100%;
+    height: var(--bar-height);
+    min-height: 1px;
+    background: var(--color-primary);
+    border-radius: 2px 2px 0 0;
+    font-size: 0;
+  }
+
+  .histogram-fallback-label {
+    display: block;
+    min-height: 1.2em;
+    margin-top: var(--space-xs);
+  }
+</style>
