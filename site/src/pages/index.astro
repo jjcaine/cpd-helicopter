@@ -68,7 +68,16 @@ const sleepPct = Math.round((sleepHours / totalFlightHours) * 100);
               <h2>When they fly</h2>
               <p>Every day, colored by hours of helicopter activity.</p>
             </div>
-            <div class="chart-container" id="calendar-chart"></div>
+            <div
+              class="chart-container calendar-chart-viewport"
+              role="region"
+              aria-label="Helicopter activity calendar; scroll horizontally to see all dates"
+              tabindex="0"
+            >
+              <div id="calendar-chart">
+                <span class="chart-loading" role="status">Loading helicopter activity calendar&hellip;</span>
+              </div>
+            </div>
           </div>
           <div class="right-panel">
             <div class="panel-header">
@@ -85,7 +94,9 @@ const sleepPct = Math.round((sleepHours / totalFlightHours) * 100);
                 <span class="time-stat-label">sleeping hours <span class="time-stat-range">10 PM–5 AM</span></span>
               </div>
             </div>
-            <div class="chart-container" id="histogram-chart"></div>
+            <div class="chart-container" id="histogram-chart">
+              <span class="chart-loading" role="status">Loading flight time chart&hellip;</span>
+            </div>
           </div>
         </div>
       </div>
@@ -136,16 +147,40 @@ const sleepPct = Math.round((sleepHours / totalFlightHours) * 100);
 </BaseLayout>
 
 <script>
-  import { renderCalendarChart } from '../lib/calendar-chart';
-  import { renderHistogramChart } from '../lib/histogram-chart';
-  import calendarData from '../data/calendar.json';
-  import histogramData from '../data/histogram.json';
+  async function loadChart(
+    container: HTMLElement,
+    chartName: string,
+    render: () => Promise<void>,
+  ) {
+    try {
+      await render();
+    } catch (error) {
+      console.error(`Unable to load the ${chartName}.`, error);
+      container.innerHTML = `<p class="chart-error" role="alert">The ${chartName} could not be loaded.</p>`;
+    }
+  }
 
   const calendarEl = document.getElementById('calendar-chart');
-  if (calendarEl) renderCalendarChart(calendarEl, calendarData);
+  if (calendarEl) {
+    void loadChart(calendarEl, 'helicopter activity calendar', async () => {
+      const [{ renderCalendarChart }, { default: calendarData }] = await Promise.all([
+        import('../lib/calendar-chart'),
+        import('../data/calendar.json'),
+      ]);
+      renderCalendarChart(calendarEl, calendarData);
+    });
+  }
 
   const histogramEl = document.getElementById('histogram-chart');
-  if (histogramEl) renderHistogramChart(histogramEl, histogramData);
+  if (histogramEl) {
+    void loadChart(histogramEl, 'flight time chart', async () => {
+      const [{ renderHistogramChart }, { default: histogramData }] = await Promise.all([
+        import('../lib/histogram-chart'),
+        import('../data/histogram.json'),
+      ]);
+      renderHistogramChart(histogramEl, histogramData);
+    });
+  }
 
   const mapEl = document.getElementById('flight-map');
   if (mapEl) {
@@ -273,6 +308,7 @@ const sleepPct = Math.round((sleepHours / totalFlightHours) * 100);
     display: flex;
     flex-direction: column;
     gap: var(--space-xl);
+    min-width: 0;
   }
 
   .right-panel {
@@ -310,6 +346,38 @@ const sleepPct = Math.round((sleepHours / totalFlightHours) * 100);
     font-size: 0.75rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+  }
+
+  .chart-loading,
+  .chart-error {
+    display: block;
+    padding: var(--space-lg) 0;
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .chart-error {
+    color: var(--color-danger);
+    text-transform: none;
+    letter-spacing: normal;
+  }
+
+  @media (max-width: 767px) {
+    .calendar-chart-viewport {
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scrollbar-gutter: stable;
+    }
+
+    .calendar-chart-viewport #calendar-chart {
+      min-width: 1004px;
+    }
+
+    .calendar-chart-viewport svg {
+      max-width: none;
+    }
   }
 
   .time-stats {

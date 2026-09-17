@@ -36,8 +36,6 @@ export function renderHistogramChart(
   container: HTMLElement,
   data: HistogramEntry[]
 ): void {
-  container.innerHTML = "";
-
   const colors = getThemeColors();
 
   const maxFlights = Math.max(...data.map((d) => d.flights));
@@ -113,7 +111,7 @@ export function renderHistogramChart(
     ],
   });
 
-  container.appendChild(chart);
+  container.replaceChildren(chart);
 
   // Tooltip — attach directly to each bar rect
   const tooltip = document.createElement("div");

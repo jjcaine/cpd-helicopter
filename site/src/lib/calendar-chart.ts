@@ -24,8 +24,6 @@ export function renderCalendarChart(
   container: HTMLElement,
   data: CalendarEntry[]
 ): void {
-  container.innerHTML = "";
-
   const colors = getThemeColors();
 
   const dataMap = new Map(data.map((d) => [d.date, d]));
@@ -125,7 +123,7 @@ export function renderCalendarChart(
     ],
   });
 
-  container.appendChild(chart);
+  container.replaceChildren(chart);
 
   // Tooltip — attach directly to each rect via addEventListener
   const tooltip = document.createElement("div");
