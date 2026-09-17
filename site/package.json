@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "test": "node --test",
+    "test": "node --test --test-concurrency=1",
+    "test:browser": "node --test scripts/mobile-chart-cold-load.browser.mjs",
     "preview": "astro preview",
     "astro": "astro"
   },
@@ -24,5 +25,8 @@
     "astro": "^6.0.8",
     "deck.gl": "^9.2.11",
     "maplibre-gl": "^5.21.0"
+  },
+  "devDependencies": {
+    "playwright": "1.58.2"
   }
 }
