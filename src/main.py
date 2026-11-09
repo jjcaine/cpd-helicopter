@@ -10,6 +10,7 @@ from pathlib import Path
 
 from src.config import TRACKED_AIRCRAFT
 from src.scraper import (
+    TraceSourceError,
     fetch_trace_data,
     parse_flight_legs,
     filter_legs_by_date_range,
@@ -20,6 +21,41 @@ from src.database import (
     SessionLocal, upsert_flights, upsert_flight_with_telemetry,
     get_flights_without_telemetry, insert_telemetry, get_last_ingested_date,
 )
+
+
+# Longest observed fleet-wide gap between flight days (Aug 2025 - Oct 2026) was
+# 8 days. A longer silence from *every* tracked aircraft means ingestion is
+# broken, not that CPD stopped flying.
+STALL_THRESHOLD_DAYS = 10
+
+
+class IngestionStalledError(RuntimeError):
+    """No tracked aircraft has new flights for longer than is plausible."""
+
+
+def check_ingestion_stalled(
+    last_dates: dict[str, date | None],
+    target_date: date,
+    threshold_days: int = STALL_THRESHOLD_DAYS,
+) -> None:
+    """
+    Raise IngestionStalledError if the most recent flight across all aircraft
+    is more than threshold_days before target_date.
+
+    Uses the most recent date across the fleet because the aircraft rotate:
+    one being idle for weeks is normal, all of them being idle is not.
+    """
+    valid = [d for d in last_dates.values() if d is not None]
+    if not valid:
+        return
+    newest = max(valid)
+    gap = (target_date - newest).days
+    if gap > threshold_days:
+        raise IngestionStalledError(
+            f"No flights ingested for any aircraft since {newest} "
+            f"({gap} days before {target_date}, threshold {threshold_days}). "
+            f"The trace source is probably failing silently."
+        )
 
 
 def compute_missing_dates(last_date: date, target_date: date) -> list[str]:
@@ -239,6 +275,8 @@ async def fetch_flights_for_aircraft(icao: str, dates: list[str], include_teleme
                         flight_data['telemetry'] = leg.get('telemetry', [])
                     all_flights.append(flight_data)
 
+        except TraceSourceError:
+            raise
         except ValueError as e:
             print(f"    Error fetching {icao} on {date}: {e}", file=sys.stderr)
         except Exception as e:
@@ -350,6 +388,8 @@ async def backfill_telemetry(
             try:
                 trace_data = await fetch_trace_data(group_icao, date_str)
                 legs = parse_flight_legs(trace_data)
+            except TraceSourceError:
+                raise
             except ValueError as e:
                 print(f"    Error: {e}", file=sys.stderr)
                 continue
@@ -456,6 +496,12 @@ def run_auto_backfill(aircraft: list[str], include_telemetry: bool):
         for date_str in missing_dates:
             print(f"\nProcessing {date_str}...", file=sys.stderr)
             asyncio.run(sync_flights(aircraft, date_str, None, include_telemetry))
+
+        # Re-read after the backfill: if nothing new landed and the fleet has
+        # been silent implausibly long, fail the job instead of reporting success.
+        session.expire_all()
+        refreshed = {icao: get_last_ingested_date(session, icao) for icao in aircraft}
+        check_ingestion_stalled(refreshed, yesterday)
 
     finally:
         session.close()

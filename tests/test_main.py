@@ -5,7 +5,17 @@ import tempfile
 import os
 from datetime import date, datetime, timezone
 
-from src.main import extract_icao_from_filename, parse_csv_file, compute_missing_dates
+import asyncio
+
+import src.main as main_module
+from src.main import (
+    extract_icao_from_filename,
+    parse_csv_file,
+    compute_missing_dates,
+    check_ingestion_stalled,
+    IngestionStalledError,
+)
+from src.scraper import TraceSourceError
 
 
 class TestExtractIcaoFromFilename:
@@ -160,3 +170,53 @@ class TestComputeMissingDates:
             '2025-01-01',
             '2025-01-02',
         ]
+
+
+class TestCheckIngestionStalled:
+    """Tests for check_ingestion_stalled: fail loudly when the whole fleet goes silent."""
+
+    def test_recent_flight_is_fine(self):
+        check_ingestion_stalled({'a': date(2026, 11, 6), 'b': None}, date(2026, 11, 7))
+
+    def test_one_aircraft_idle_is_fine_if_other_flew(self):
+        # Aircraft rotate; one idle for weeks is normal.
+        check_ingestion_stalled(
+            {'a': date(2026, 9, 1), 'b': date(2026, 11, 5)}, date(2026, 11, 7)
+        )
+
+    def test_gap_at_threshold_is_fine(self):
+        check_ingestion_stalled(
+            {'a': date(2026, 10, 28)}, date(2026, 11, 7), threshold_days=10
+        )
+
+    def test_fleet_silent_beyond_threshold_raises(self):
+        # The real Oct 26/27 -> Nov 7 2026 outage.
+        with pytest.raises(IngestionStalledError, match='2026-10-27'):
+            check_ingestion_stalled(
+                {'ad389e': date(2026, 10, 27), 'ad3c55': date(2026, 10, 26)},
+                date(2026, 11, 7),
+                threshold_days=10,
+            )
+
+    def test_no_data_does_not_raise(self):
+        check_ingestion_stalled({'a': None, 'b': None}, date(2026, 11, 7))
+
+
+class TestFetchFlightsSourceErrors:
+    """A blocked/failed source must propagate, not be logged as 'no flights'."""
+
+    def test_source_error_propagates(self, monkeypatch):
+        async def blocked(icao, date):
+            raise TraceSourceError('Trace source returned HTTP 403')
+
+        monkeypatch.setattr(main_module, 'fetch_trace_data', blocked)
+        with pytest.raises(TraceSourceError):
+            asyncio.run(main_module.fetch_flights_for_aircraft('ad389e', ['2026-11-07']))
+
+    def test_no_trace_data_is_still_skipped(self, monkeypatch):
+        async def empty(icao, date):
+            raise ValueError('No trace data found')
+
+        monkeypatch.setattr(main_module, 'fetch_trace_data', empty)
+        result = asyncio.run(main_module.fetch_flights_for_aircraft('ad389e', ['2026-11-07']))
+        assert result == []

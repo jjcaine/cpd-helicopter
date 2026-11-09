@@ -9,6 +9,8 @@ from src.scraper import (
     filter_legs_by_date_range,
     get_date_range,
     get_yesterday,
+    check_trace_response_status,
+    TraceSourceError,
 )
 
 
@@ -353,3 +355,16 @@ class TestParseFlightLegsWithTelemetry:
         assert len(legs) == 1
         assert len(legs[0]['telemetry']) == 1
         assert legs[0]['telemetry'][0]['latitude'] == 41.8
+
+
+class TestCheckTraceResponseStatus:
+    """Source errors must be distinguishable from 'no trace for that day'."""
+
+    @pytest.mark.parametrize('status', [401, 403, 429, 500, 502, 503, 504])
+    def test_error_statuses_raise(self, status):
+        with pytest.raises(TraceSourceError, match=str(status)):
+            check_trace_response_status('https://x/trace_full_ad389e.json', status)
+
+    @pytest.mark.parametrize('status', [200, 304, 404])
+    def test_ok_and_not_found_do_not_raise(self, status):
+        check_trace_response_status('https://x/trace_full_ad389e.json', status)

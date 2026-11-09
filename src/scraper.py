@@ -6,6 +6,25 @@ from typing import Optional
 from playwright.async_api import async_playwright
 
 
+class TraceSourceError(RuntimeError):
+    """The trace source refused or failed the request (auth gate, rate limit, outage).
+
+    Distinct from ValueError('No trace data found'), which means the aircraft
+    simply has no trace for that day. Callers must not treat this as "no flights".
+    """
+
+
+# HTTP statuses on a trace request that mean "we could not read the source",
+# as opposed to 404, which means "no trace exists for that aircraft/day".
+SOURCE_ERROR_STATUSES = {401, 403, 429, 500, 502, 503, 504}
+
+
+def check_trace_response_status(url: str, status: int) -> None:
+    """Raise TraceSourceError if a trace request failed for a non-'no data' reason."""
+    if status in SOURCE_ERROR_STATUSES:
+        raise TraceSourceError(f'Trace source returned HTTP {status} for {url}')
+
+
 async def fetch_trace_data(icao: str, date: Optional[str] = None) -> dict:
     """
     Fetch trace data from ADS-B Exchange for a specific aircraft and date.
@@ -21,6 +40,7 @@ async def fetch_trace_data(icao: str, date: Optional[str] = None) -> dict:
         ValueError: If no trace data is found
     """
     trace_data = None
+    source_error: Optional[TraceSourceError] = None
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
@@ -30,9 +50,14 @@ async def fetch_trace_data(icao: str, date: Optional[str] = None) -> dict:
         page = await context.new_page()
 
         async def handle_response(response):
-            nonlocal trace_data
+            nonlocal trace_data, source_error
             url = response.url
             if ('trace_full' in url or 'trace_recent' in url) and url.endswith('.json'):
+                try:
+                    check_trace_response_status(url, response.status)
+                except TraceSourceError as e:
+                    source_error = e
+                    return
                 try:
                     data = await response.json()
                     # Prefer trace_full over trace_recent
@@ -56,6 +81,9 @@ async def fetch_trace_data(icao: str, date: Optional[str] = None) -> dict:
         # Wait for trace data to load
         await page.wait_for_timeout(5000)
         await browser.close()
+
+    if (not trace_data or 'trace' not in trace_data) and source_error:
+        raise source_error
 
     if not trace_data or 'trace' not in trace_data:
         raise ValueError('No trace data found')
