@@ -340,3 +340,5 @@ All times are stored and displayed in **UTC**. A flight in Cleveland (EST/UTC-5)
 
 - **2026-10-27 onward:** [adsb.lol](https://adsb.lol) open data ([globe_history releases](https://github.com/adsblol)), © adsb.lol contributors, licensed under the [Open Database License (ODbL) 1.0](https://opendatacommons.org/licenses/odbl/1-0/).
 - **Through 2026-10-26:** ADS-B Exchange historical traces. ADS-B Exchange put historical data behind a human-verification gate in late October 2026.
+
+See [`data/LICENSE`](data/LICENSE) for the terms covering the published data files.
