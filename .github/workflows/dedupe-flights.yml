@@ -1,0 +1,37 @@
+name: Dedupe Overlapping Flights
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Delete duplicates (unchecked = dry run, report only)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  dedupe:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.3
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Dedupe overlapping flights
+        env:
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+        run: |
+          if [ "${{ inputs.apply }}" = "true" ]; then
+            PYTHONPATH=. uv run python scripts/dedupe_overlapping_flights.py --apply
+          else
+            PYTHONPATH=. uv run python scripts/dedupe_overlapping_flights.py
+          fi

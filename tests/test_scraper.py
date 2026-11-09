@@ -353,3 +353,4 @@ class TestParseFlightLegsWithTelemetry:
         assert len(legs) == 1
         assert len(legs[0]['telemetry']) == 1
         assert legs[0]['telemetry'][0]['latitude'] == 41.8
+

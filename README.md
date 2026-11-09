@@ -37,9 +37,6 @@ Cleveland Police Department operates multiple helicopters that rotate — they d
 # Install dependencies
 uv sync
 
-# Install Playwright browser
-uv run playwright install chromium
-
 # Configure database
 cp .env.example .env
 # Edit .env with your database credentials
@@ -283,7 +280,7 @@ cpd-helicopter/
 ### Data Flow
 
 ```
-Public transponder data → Playwright scraper → PostgreSQL (DigitalOcean) → Parquet export → Git repo
+adsb.lol daily globe_history archives → trace fetcher → PostgreSQL (DigitalOcean) → Parquet export → Git repo
 ```
 
 - **Source of truth:** PostgreSQL database hosted on DigitalOcean (managed, requires SSL)
@@ -304,7 +301,11 @@ Because the GitHub Actions bot pushes commits daily, your local repo will drift 
 
 ### Workflow is green but no new flights
 
-This is normal — it means the aircraft didn't fly on those dates. CPD rotates between helicopters and doesn't fly every day. The scraper correctly reports "No flights found" and the workflow succeeds.
+This is normal for a few days — the aircraft didn't fly on those dates. CPD rotates between helicopters and doesn't fly every day. The fetcher reports "No flights found" and the workflow succeeds.
+
+### Workflow fails with `TraceSourceError` or `IngestionStalledError`
+
+The trace source couldn't be read (HTTP error, missing archive parts), or no aircraft has had a flight in more than 10 days — longer than any real gap observed. Either way, ingestion is broken; check the run log. An unpublished day (adsb.lol releases land around 03:30 UTC the following day) is skipped and picked up by the next run's auto-backfill.
 
 ### One aircraft shows no data for extended periods
 
@@ -316,10 +317,10 @@ The daily sync bot pushes "Update data export" commits. Run `git pull` to get th
 
 ## How It Works
 
-1. **Fetch Data:** Uses Playwright to load historical flight trace data
+1. **Fetch Data:** Streams the day's [adsb.lol](https://adsb.lol) `globe_history` release (~4 GB tar split into parts) through `tar`, keeping only the tracked aircraft's `trace_full_<icao>.json` files
 2. **Parse Legs:** Analyzes trace data for 5+ minute gaps to identify separate flight legs
 3. **Capture Telemetry:** Extracts GPS coordinates, altitude, speed, heading, and other data points from each trace
-4. **Deduplicate:** Removes duplicates based on start time
+4. **Deduplicate:** Removes duplicates based on start time (flights with overlapping time ranges for the same aircraft are treated as one, since sources can differ by up to ~1 minute on start time)
 5. **UPSERT:** Inserts new flights or updates end times for existing flights, storing associated telemetry
 
 ## Time Zone Note
@@ -334,3 +335,10 @@ All times are stored and displayed in **UTC**. A flight in Cleveland (EST/UTC-5)
 - Recent data (last few days) is most reliable
 - Some dates may have no data if the aircraft didn't fly
 - The script gracefully handles dates with no available data
+
+## Data Sources & License
+
+- **2026-10-27 onward:** [adsb.lol](https://adsb.lol) open data ([globe_history releases](https://github.com/adsblol)), © adsb.lol contributors, licensed under the [Open Database License (ODbL) 1.0](https://opendatacommons.org/licenses/odbl/1-0/).
+- **Through 2026-10-26:** ADS-B Exchange historical traces. ADS-B Exchange put historical data behind a human-verification gate in late October 2026.
+
+See [`data/LICENSE`](data/LICENSE) for the terms covering the published data files.

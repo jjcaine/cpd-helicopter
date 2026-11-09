@@ -27,9 +27,7 @@ jobs:
         uses: astral-sh/setup-uv@v10.3.3
 
       - name: Install dependencies
-        run: |
-          uv sync
-          uv run playwright install chromium
+        run: uv sync
 
       - name: Backfill telemetry
         env:
@@ -38,6 +36,7 @@ jobs:
           DB_HOST: ${{ secrets.DB_HOST }}
           DB_PORT: ${{ secrets.DB_PORT }}
           DB_NAME: ${{ secrets.DB_NAME }}
+          GITHUB_TOKEN: ${{ github.token }}  # authenticated GitHub API calls for adsb.lol releases
         run: |
           CMD="uv run python -m src.main --backfill-telemetry"
           if [ -n "${{ inputs.icao }}" ]; then

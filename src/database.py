@@ -63,11 +63,27 @@ def get_last_ingested_date(session, icao: str = None) -> date | None:
     return min(last_dates)
 
 
+def find_overlapping_flight(session, icao: str, start_time: datetime, end_time: datetime):
+    """Return the existing flight for icao whose [start, end] overlaps the given range, if any."""
+    return (
+        session.query(Flight)
+        .filter(
+            Flight.icao == icao,
+            Flight.start_time <= end_time,
+            Flight.end_time >= start_time,
+        )
+        .order_by(func.abs(func.extract('epoch', Flight.start_time - start_time)))
+        .first()
+    )
+
+
 def upsert_flight(session, icao: str, start_time: datetime, end_time: datetime) -> dict:
     """
     Insert or update a flight record using UPSERT logic.
 
-    If a flight with the same (icao, start_time) exists:
+    If an existing flight for icao overlaps [start_time, end_time] (the same
+    flight, possibly observed by a different source):
+    - Keep its start_time (stable identity)
     - Update end_time only if the new end_time is later
     - Update updated_at timestamp
 
@@ -80,10 +96,14 @@ def upsert_flight(session, icao: str, start_time: datetime, end_time: datetime) 
     Returns:
         dict: {'action': 'inserted' | 'updated' | 'unchanged', 'flight': Flight}
     """
-    # Check if flight already exists
-    existing = session.query(Flight).filter_by(
-        icao=icao, start_time=start_time
-    ).first()
+    # Check if this flight already exists. Match on overlapping time ranges, not
+    # exact start_time: different trace sources (ADS-B Exchange vs adsb.lol) see
+    # the same flight's first position anywhere from milliseconds to ~1 minute
+    # apart, depending on which receivers picked it up. Distinct legs are split
+    # on >= 5 min gaps, so they never overlap. Closed-interval comparison keeps
+    # midnight-split pieces (23:59:59 / 00:00:02) separate while still matching
+    # single-point flights.
+    existing = find_overlapping_flight(session, icao, start_time, end_time)
 
     if existing:
         # Flight exists - check if we should update

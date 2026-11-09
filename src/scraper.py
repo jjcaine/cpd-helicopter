@@ -1,66 +1,15 @@
-"""ADS-B Exchange scraping logic using Playwright."""
+"""Trace parsing helpers (readsb trace format) and source error types."""
 
-import asyncio
 from datetime import datetime, timezone, timedelta
 from typing import Optional
-from playwright.async_api import async_playwright
 
 
-async def fetch_trace_data(icao: str, date: Optional[str] = None) -> dict:
+class TraceSourceError(RuntimeError):
+    """The trace source refused or failed the request (auth gate, rate limit, outage).
+
+    Distinct from ValueError('No trace data found'), which means the aircraft
+    simply has no trace for that day. Callers must not treat this as "no flights".
     """
-    Fetch trace data from ADS-B Exchange for a specific aircraft and date.
-
-    Args:
-        icao: Aircraft ICAO hex code (e.g., 'ad389e')
-        date: Date in YYYY-MM-DD format (optional, defaults to current day)
-
-    Returns:
-        dict: Trace data containing timestamp and trace array
-
-    Raises:
-        ValueError: If no trace data is found
-    """
-    trace_data = None
-
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        context = await browser.new_context(
-            user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        )
-        page = await context.new_page()
-
-        async def handle_response(response):
-            nonlocal trace_data
-            url = response.url
-            if ('trace_full' in url or 'trace_recent' in url) and url.endswith('.json'):
-                try:
-                    data = await response.json()
-                    # Prefer trace_full over trace_recent
-                    if trace_data is None or 'trace_full' in url:
-                        trace_data = data
-                except Exception:
-                    pass
-
-        page.on('response', handle_response)
-
-        # Build URL with optional showTrace parameter
-        url = f'https://globe.adsbexchange.com/?icao={icao}'
-        if date:
-            url += f'&showTrace={date}'
-
-        try:
-            await page.goto(url, wait_until='load', timeout=15000)
-        except Exception:
-            pass
-
-        # Wait for trace data to load
-        await page.wait_for_timeout(5000)
-        await browser.close()
-
-    if not trace_data or 'trace' not in trace_data:
-        raise ValueError('No trace data found')
-
-    return trace_data
 
 
 def parse_telemetry_point(base_timestamp: int, point: list) -> dict:
