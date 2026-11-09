@@ -320,7 +320,7 @@ The daily sync bot pushes "Update data export" commits. Run `git pull` to get th
 1. **Fetch Data:** Streams the day's [adsb.lol](https://adsb.lol) `globe_history` release (~4 GB tar split into parts) through `tar`, keeping only the tracked aircraft's `trace_full_<icao>.json` files
 2. **Parse Legs:** Analyzes trace data for 5+ minute gaps to identify separate flight legs
 3. **Capture Telemetry:** Extracts GPS coordinates, altitude, speed, heading, and other data points from each trace
-4. **Deduplicate:** Removes duplicates based on start time (matched within 5 seconds, since sources differ by milliseconds)
+4. **Deduplicate:** Removes duplicates based on start time (flights with overlapping time ranges for the same aircraft are treated as one, since sources can differ by up to ~1 minute on start time)
 5. **UPSERT:** Inserts new flights or updates end times for existing flights, storing associated telemetry
 
 ## Time Zone Note
