@@ -40,6 +40,31 @@ class TestUpsertFlight:
         assert result['flight'].start_time == start_time
         assert result['flight'].end_time == end_time
 
+    def test_near_identical_start_matches_existing_flight(self, db_session, cleanup_test_flights):
+        """A start time a few ms off (different trace source) must not create a duplicate."""
+        # Real case: ADS-B Exchange vs adsb.lol for ad3c55 on 2026-10-26.
+        adsbx_start = datetime(2026, 10, 26, 17, 49, 4, 210000, tzinfo=timezone.utc)
+        adsblol_start = datetime(2026, 10, 26, 17, 49, 4, 230000, tzinfo=timezone.utc)
+        end_time = datetime(2026, 10, 26, 19, 53, 20, tzinfo=timezone.utc)
+
+        first = upsert_flight(db_session, 'test10', adsbx_start, end_time)
+        second = upsert_flight(db_session, 'test10', adsblol_start, end_time)
+
+        assert second['action'] == 'unchanged'
+        assert second['flight'].id == first['flight'].id
+        assert db_session.query(Flight).filter_by(icao='test10').count() == 1
+
+    def test_distinct_start_outside_tolerance_inserts(self, db_session, cleanup_test_flights):
+        """Flights whose starts differ by more than the tolerance stay separate."""
+        start_a = datetime(2026, 10, 26, 17, 0, 0, tzinfo=timezone.utc)
+        start_b = start_a + timedelta(minutes=10)
+
+        upsert_flight(db_session, 'test11', start_a, start_a + timedelta(minutes=5))
+        result = upsert_flight(db_session, 'test11', start_b, start_b + timedelta(minutes=5))
+
+        assert result['action'] == 'inserted'
+        assert db_session.query(Flight).filter_by(icao='test11').count() == 2
+
     def test_update_end_time_later(self, db_session, cleanup_test_flights):
         """Upserting with later end_time should update."""
         start_time = datetime(2025, 1, 2, 10, 0, 0, tzinfo=timezone.utc)

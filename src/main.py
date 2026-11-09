@@ -9,9 +9,9 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from src.config import TRACKED_AIRCRAFT
+from src.trace_source import fetch_trace_data
 from src.scraper import (
     TraceSourceError,
-    fetch_trace_data,
     parse_flight_legs,
     filter_legs_by_date_range,
     get_date_range,

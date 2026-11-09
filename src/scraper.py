@@ -1,9 +1,7 @@
-"""ADS-B Exchange scraping logic using Playwright."""
+"""Trace parsing helpers (readsb trace format) and source error types."""
 
-import asyncio
 from datetime import datetime, timezone, timedelta
 from typing import Optional
-from playwright.async_api import async_playwright
 
 
 class TraceSourceError(RuntimeError):
@@ -12,83 +10,6 @@ class TraceSourceError(RuntimeError):
     Distinct from ValueError('No trace data found'), which means the aircraft
     simply has no trace for that day. Callers must not treat this as "no flights".
     """
-
-
-# HTTP statuses on a trace request that mean "we could not read the source",
-# as opposed to 404, which means "no trace exists for that aircraft/day".
-SOURCE_ERROR_STATUSES = {401, 403, 429, 500, 502, 503, 504}
-
-
-def check_trace_response_status(url: str, status: int) -> None:
-    """Raise TraceSourceError if a trace request failed for a non-'no data' reason."""
-    if status in SOURCE_ERROR_STATUSES:
-        raise TraceSourceError(f'Trace source returned HTTP {status} for {url}')
-
-
-async def fetch_trace_data(icao: str, date: Optional[str] = None) -> dict:
-    """
-    Fetch trace data from ADS-B Exchange for a specific aircraft and date.
-
-    Args:
-        icao: Aircraft ICAO hex code (e.g., 'ad389e')
-        date: Date in YYYY-MM-DD format (optional, defaults to current day)
-
-    Returns:
-        dict: Trace data containing timestamp and trace array
-
-    Raises:
-        ValueError: If no trace data is found
-    """
-    trace_data = None
-    source_error: Optional[TraceSourceError] = None
-
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        context = await browser.new_context(
-            user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        )
-        page = await context.new_page()
-
-        async def handle_response(response):
-            nonlocal trace_data, source_error
-            url = response.url
-            if ('trace_full' in url or 'trace_recent' in url) and url.endswith('.json'):
-                try:
-                    check_trace_response_status(url, response.status)
-                except TraceSourceError as e:
-                    source_error = e
-                    return
-                try:
-                    data = await response.json()
-                    # Prefer trace_full over trace_recent
-                    if trace_data is None or 'trace_full' in url:
-                        trace_data = data
-                except Exception:
-                    pass
-
-        page.on('response', handle_response)
-
-        # Build URL with optional showTrace parameter
-        url = f'https://globe.adsbexchange.com/?icao={icao}'
-        if date:
-            url += f'&showTrace={date}'
-
-        try:
-            await page.goto(url, wait_until='load', timeout=15000)
-        except Exception:
-            pass
-
-        # Wait for trace data to load
-        await page.wait_for_timeout(5000)
-        await browser.close()
-
-    if (not trace_data or 'trace' not in trace_data) and source_error:
-        raise source_error
-
-    if not trace_data or 'trace' not in trace_data:
-        raise ValueError('No trace data found')
-
-    return trace_data
 
 
 def parse_telemetry_point(base_timestamp: int, point: list) -> dict:

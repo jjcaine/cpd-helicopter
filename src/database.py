@@ -1,6 +1,6 @@
 """Database connection and session management."""
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.dialects.postgresql import insert
@@ -8,6 +8,10 @@ from sqlalchemy.sql import func
 
 from src.config import get_database_url
 from src.models import Base, Flight, FlightTelemetry
+
+# Two observations of the same flight's start from different trace sources
+# differ by milliseconds; distinct flights are separated by >= 5 min gaps.
+START_TIME_MATCH_TOLERANCE_SECONDS = 5
 
 engine = create_engine(get_database_url())
 SessionLocal = sessionmaker(bind=engine)
@@ -80,10 +84,21 @@ def upsert_flight(session, icao: str, start_time: datetime, end_time: datetime) 
     Returns:
         dict: {'action': 'inserted' | 'updated' | 'unchanged', 'flight': Flight}
     """
-    # Check if flight already exists
-    existing = session.query(Flight).filter_by(
-        icao=icao, start_time=start_time
-    ).first()
+    # Check if flight already exists. Match within a small tolerance rather than
+    # exactly: different trace sources (ADS-B Exchange vs adsb.lol) report the
+    # same first position a few milliseconds apart, and an exact match would
+    # create a duplicate flight when a day is re-fetched from a new source.
+    tolerance = timedelta(seconds=START_TIME_MATCH_TOLERANCE_SECONDS)
+    existing = (
+        session.query(Flight)
+        .filter(
+            Flight.icao == icao,
+            Flight.start_time >= start_time - tolerance,
+            Flight.start_time <= start_time + tolerance,
+        )
+        .order_by(func.abs(func.extract('epoch', Flight.start_time - start_time)))
+        .first()
+    )
 
     if existing:
         # Flight exists - check if we should update
