@@ -58,6 +58,32 @@ def check_ingestion_stalled(
         )
 
 
+# Always re-check this many recent days. Re-fetching is idempotent (overlap
+# upsert), and it picks up days whose archive was published late.
+RECHECK_DAYS = 3
+
+
+def compute_backfill_last_date(
+    last_dates: dict[str, date | None],
+    target_date: date,
+    recheck_days: int = RECHECK_DAYS,
+) -> date | None:
+    """
+    Return the date to backfill *after* (exclusive), or None if there is no data.
+
+    Uses the newest last-ingested date across the fleet, not the oldest: one
+    daily archive covers every aircraft, so any day after the fleet's newest
+    flight has already been checked for all of them. Using the oldest would make
+    an idle aircraft (they rotate, often for weeks) re-download every day since
+    its last flight on every run. The result is capped so the last recheck_days
+    days before target_date are always re-fetched.
+    """
+    valid = [d for d in last_dates.values() if d is not None]
+    if not valid:
+        return None
+    return min(max(valid), target_date - timedelta(days=recheck_days))
+
+
 def compute_missing_dates(last_date: date, target_date: date) -> list[str]:
     """
     Compute the list of dates needing backfill.
@@ -471,19 +497,16 @@ def run_auto_backfill(aircraft: list[str], include_telemetry: bool):
 
         print(f"Target date: {yesterday} (yesterday)", file=sys.stderr)
 
-        # Find the earliest last date across all aircraft (or None if any have no data)
-        valid_dates = [d for d in last_dates.values() if d is not None]
+        backfill_after = compute_backfill_last_date(last_dates, yesterday)
 
-        if not valid_dates:
+        if backfill_after is None:
             # No existing data - just fetch yesterday
             print("No existing data found, fetching yesterday only.", file=sys.stderr)
             asyncio.run(sync_flights(aircraft, yesterday_str, None, include_telemetry))
             return
 
-        earliest_last_date = min(valid_dates)
-
-        # Compute missing dates
-        missing_dates = compute_missing_dates(earliest_last_date, yesterday)
+        # Compute missing dates (always includes the last RECHECK_DAYS days)
+        missing_dates = compute_missing_dates(backfill_after, yesterday)
 
         if not missing_dates:
             print("No gaps detected, fetching yesterday only.", file=sys.stderr)

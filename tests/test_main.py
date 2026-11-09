@@ -13,6 +13,7 @@ from src.main import (
     parse_csv_file,
     compute_missing_dates,
     check_ingestion_stalled,
+    compute_backfill_last_date,
     IngestionStalledError,
 )
 from src.scraper import TraceSourceError
@@ -220,3 +221,31 @@ class TestFetchFlightsSourceErrors:
         monkeypatch.setattr(main_module, 'fetch_trace_data', empty)
         result = asyncio.run(main_module.fetch_flights_for_aircraft('ad389e', ['2026-11-07']))
         assert result == []
+
+
+class TestComputeBackfillLastDate:
+    """The backfill window starts from the fleet's newest flight, capped to a recheck window."""
+
+    def test_idle_aircraft_does_not_widen_window(self):
+        # Real case: ad3c55 idle since 2026-10-26 must not force re-reading every day since.
+        last = {'ad389e': date(2026, 11, 6), 'ad3c55': date(2026, 10, 26)}
+        after = compute_backfill_last_date(last, date(2026, 11, 8), recheck_days=3)
+        assert after == date(2026, 11, 5)
+        assert compute_missing_dates(after, date(2026, 11, 8)) == [
+            '2026-11-06', '2026-11-07', '2026-11-08',
+        ]
+
+    def test_real_gap_is_fully_backfilled(self):
+        last = {'a': date(2026, 10, 26), 'b': date(2026, 10, 20)}
+        after = compute_backfill_last_date(last, date(2026, 11, 8), recheck_days=3)
+        assert after == date(2026, 10, 26)
+
+    def test_always_rechecks_recent_days_even_if_up_to_date(self):
+        last = {'a': date(2026, 11, 8)}
+        after = compute_backfill_last_date(last, date(2026, 11, 8), recheck_days=3)
+        assert compute_missing_dates(after, date(2026, 11, 8)) == [
+            '2026-11-06', '2026-11-07', '2026-11-08',
+        ]
+
+    def test_no_data_returns_none(self):
+        assert compute_backfill_last_date({'a': None, 'b': None}, date(2026, 11, 8)) is None

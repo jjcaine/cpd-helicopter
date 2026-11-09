@@ -40,30 +40,42 @@ class TestUpsertFlight:
         assert result['flight'].start_time == start_time
         assert result['flight'].end_time == end_time
 
-    def test_near_identical_start_matches_existing_flight(self, db_session, cleanup_test_flights):
-        """A start time a few ms off (different trace source) must not create a duplicate."""
-        # Real case: ADS-B Exchange vs adsb.lol for ad3c55 on 2026-10-26.
-        adsbx_start = datetime(2026, 10, 26, 17, 49, 4, 210000, tzinfo=timezone.utc)
-        adsblol_start = datetime(2026, 10, 26, 17, 49, 4, 230000, tzinfo=timezone.utc)
-        end_time = datetime(2026, 10, 26, 19, 53, 20, tzinfo=timezone.utc)
+    def test_same_flight_from_other_source_matches_existing(self, db_session, cleanup_test_flights):
+        """An overlapping flight with a different start (other source) must not duplicate."""
+        # Real case: ad389e on 2026-10-27, ADS-B Exchange vs adsb.lol, starts 51 s apart.
+        adsbx = (datetime(2026, 10, 27, 22, 52, 52, 390000, tzinfo=timezone.utc),
+                 datetime(2026, 10, 27, 23, 59, 58, 450000, tzinfo=timezone.utc))
+        adsblol = (datetime(2026, 10, 27, 22, 53, 43, 660000, tzinfo=timezone.utc),
+                   datetime(2026, 10, 27, 23, 59, 59, 460000, tzinfo=timezone.utc))
 
-        first = upsert_flight(db_session, 'test10', adsbx_start, end_time)
-        second = upsert_flight(db_session, 'test10', adsblol_start, end_time)
+        first = upsert_flight(db_session, 'test10', *adsbx)
+        second = upsert_flight(db_session, 'test10', *adsblol)
 
-        assert second['action'] == 'unchanged'
         assert second['flight'].id == first['flight'].id
+        assert second['action'] == 'updated'  # later end time extends the flight
+        assert second['flight'].start_time == adsbx[0]  # identity kept
+        assert second['flight'].end_time == adsblol[1]
         assert db_session.query(Flight).filter_by(icao='test10').count() == 1
 
-    def test_distinct_start_outside_tolerance_inserts(self, db_session, cleanup_test_flights):
-        """Flights whose starts differ by more than the tolerance stay separate."""
-        start_a = datetime(2026, 10, 26, 17, 0, 0, tzinfo=timezone.utc)
-        start_b = start_a + timedelta(minutes=10)
-
-        upsert_flight(db_session, 'test11', start_a, start_a + timedelta(minutes=5))
-        result = upsert_flight(db_session, 'test11', start_b, start_b + timedelta(minutes=5))
+    def test_midnight_split_pieces_stay_separate(self, db_session, cleanup_test_flights):
+        """Legs split at UTC midnight are adjacent, not overlapping: keep both."""
+        upsert_flight(db_session, 'test11',
+                      datetime(2026, 10, 27, 22, 53, 43, tzinfo=timezone.utc),
+                      datetime(2026, 10, 27, 23, 59, 59, 460000, tzinfo=timezone.utc))
+        result = upsert_flight(db_session, 'test11',
+                               datetime(2026, 10, 28, 0, 0, 2, 770000, tzinfo=timezone.utc),
+                               datetime(2026, 10, 28, 1, 12, 4, tzinfo=timezone.utc))
 
         assert result['action'] == 'inserted'
         assert db_session.query(Flight).filter_by(icao='test11').count() == 2
+
+    def test_overlap_is_per_aircraft(self, db_session, cleanup_test_flights):
+        """Overlapping flights of different aircraft are different flights."""
+        start = datetime(2026, 10, 26, 17, 0, 0, tzinfo=timezone.utc)
+        end = datetime(2026, 10, 26, 18, 0, 0, tzinfo=timezone.utc)
+        upsert_flight(db_session, 'test12', start, end)
+        result = upsert_flight(db_session, 'test13', start, end)
+        assert result['action'] == 'inserted'
 
     def test_update_end_time_later(self, db_session, cleanup_test_flights):
         """Upserting with later end_time should update."""
